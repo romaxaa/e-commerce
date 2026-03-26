@@ -61,6 +61,14 @@ services:
     container_name: commerce-frontend
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app          # Монтируем вашу локальную папку
+      - /app/node_modules         # Исключаем node_modules (чтобы не перезаписывать)
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    stdin_open: true
+    tty: true
     depends_on:
       - php
 
