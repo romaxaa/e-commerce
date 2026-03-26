@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www
+      - ./frontend/dist:/var/www/frontend
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - frontend
+
+  php:
+    build: ./docker/php
+    volumes:
+      - ./backend:/var/www
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    image: mysql:8
+    container_name: ecommerce_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ecommerce
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: ecommerce_phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    depends_on:
+      - mysql
+
+  redis:
+    image: redis:alpine
+
+  websocket:
+    build: ./docker/php
+    command: php /var/www/websocket/server.php
+    volumes:
+      - ./backend:/var/www
+
+  frontend:
+    build: ./frontend
+    container_name: commerce-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - php
+
+volumes:
+  mysql_data:
