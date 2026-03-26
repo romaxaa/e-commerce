@@ -1,7 +1,6 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <h1 class="text-blue-600 font-bold">вапвапвапвапвап</h1>
 </template>

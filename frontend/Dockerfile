@@ -2,12 +2,23 @@ FROM node:22-bullseye
 
 WORKDIR /app
 
+# Копируем package файлы
 COPY package*.json ./
 
-# Ставим все зависимости включая devDependencies
+# Устанавливаем зависимости
 RUN npm install
 
+# Копируем остальные файлы
 COPY . .
 
-# Используем npx для локального vite
-CMD ["npx", "vite", "dev", "--host"]
+# Создаем папку для node_modules если нужно
+RUN chown -R node:node /app
+
+# Переключаемся на пользователя node (безопасность)
+USER node
+
+# Открываем порт Vite
+EXPOSE 5173
+
+# Запускаем Vite с явными параметрами
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
