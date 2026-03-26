@@ -1,6 +1,27 @@
+<template>
+  <div class="app">
+    <router-view />
+  </div>
+</template>
+
 <script setup>
 </script>
 
-<template>
-  <h1 class="text-blue-600 font-bold">вапвапвапвапвап</h1>
-</template>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a0a;
+  color: white;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+.app {
+  min-height: 100vh;
+}
+</style>
