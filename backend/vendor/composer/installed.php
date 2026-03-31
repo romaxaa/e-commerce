@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'name' => '__root__',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'fec9caa709978159d7f07ca7acb5798c3b3e3d5b',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'dev' => true,
+    ),
+    'versions' => array(
+        '__root__' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'fec9caa709978159d7f07ca7acb5798c3b3e3d5b',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'namshi/jose' => array(
+            'pretty_version' => '7.2.3',
+            'version' => '7.2.3.0',
+            'reference' => '89a24d7eb3040e285dd5925fcad992378b82bcff',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../namshi/jose',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'symfony/polyfill-php56' => array(
+            'pretty_version' => 'v1.20.0',
+            'version' => '1.20.0.0',
+            'reference' => '54b8cd7e6c1643d78d011f3be89f3ef1f9f4c675',
+            'type' => 'metapackage',
+            'install_path' => null,
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+    ),
+);
