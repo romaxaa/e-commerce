@@ -7,6 +7,8 @@ require_once __DIR__ . '/../include/config.php';
 
 session_start();
 
+use Namshi\JOSE\SimpleJWS;
+
 $inputJSON = file_get_contents('php://input');
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -160,6 +162,7 @@ function UploadFile($folder, $module, $thumb = false, $watermark_file = null, $w
 switch ($action) 
 {
     case 'login':
+
         $userId = getuserid($secretKey);
 
         if ($userId) 
@@ -227,4 +230,83 @@ switch ($action)
         echo array_shift($errors);return;   
     break 1;
 
+    case 'register':
+        $userId = getuserid($secretKey);
+
+        if ($userId) 
+        {
+            http_response_code(401);
+            echo json_encode(['error' => 'авторизован']);
+            break;
+        }
+
+        if(isset($data['name']) && isset($data['email']) && isset($data['password']) && isset($data['password_repeat']))
+        {
+            $errors = array();
+
+            if (R::count('users', "email = ?", array($data['email'])) > 0)
+            {
+                echo json_encode(['result' => 'matchemail']);
+                exit;
+            }
+            if (R::count('users', "username = ?", array($data['name'])) > 0)
+            {
+                echo json_encode(['result' => 'matchusername']);
+                exit;
+            }
+            if (iconv_strlen($data["password"]) < 2)
+            {
+                echo json_encode(['result' => 'minpass']);
+                exit;
+            }
+            if ($data['password'] !== $data['password_repeat']) 
+            {
+                echo json_encode(['result' => 'passnotmuch']);
+                exit;
+            }
+            if (empty($errors))
+            {
+                $bad = array('?', '!', ' ', '&', '*', '$', '#', '@', '+', '`', '"', "'", '=',',','/','<','>');
+                $good = array('', '', '', '', '', '', '', '', '', '', '', '', '','','','','');
+                $bademail = array('?', '!', ' ', '&', '*', '$', '#', '+', '`', '"', "'", '=',',','/','<','>');
+                $goodemail = array('', '', '', '', '', '', '', '', '', '', '', '','','','',''); 
+                 			
+                $user = R::dispense('users');
+                $user->username = htmlspecialchars(str_replace($bad, $good, $data['name']),ENT_QUOTES); 
+                $user->email = htmlspecialchars(str_replace($bademail, $goodemail, $data['email']),ENT_QUOTES); 
+                $user->emailverified = 0;
+                $user->password = password_hash($data['password'], PASSWORD_DEFAULT); 
+                $user->bio = null;
+                $user->avatar ='images/cover_users.jpg';
+                $user->group = 1;
+                $user->cover = 'images/ava.png';
+                $user->banned = '0';
+                $user->lastjoin = date("Y-m-d H:i:s"); 
+                R::store($user);
+
+                $_SESSION['logged_user'] = $user;
+                echo json_encode(array('result'=>'good'));
+            } 
+            else 
+            {
+                echo array_shift($errors);
+                return;
+            }
+        }
+    break 1;
+
+    case 'get_profile':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(array('result' => 'no_auth'));
+            return;
+        }
+
+        $userinfo = R::load('users', $_SESSION['logged_user']->id);
+
+        if(!empty($userinfo))
+        {
+            echo json_encode(array('result' => 'good', 'user' => $userinfo));
+        }
+    break 1;
 };
