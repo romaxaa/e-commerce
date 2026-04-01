@@ -1,23 +1,11 @@
-<!-- Login.vue -->
 <template>
   <div class="auth-page">
     <div class="auth-container glass-panel">
+      
       <!-- Переключатель между входом и регистрацией -->
       <div class="auth-tabs">
-        <button 
-          class="tab-btn" 
-          :class="{ active: isLogin }" 
-          @click="isLogin = true"
-        >
-          Вход
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: !isLogin }" 
-          @click="isLogin = false"
-        >
-          Регистрация
-        </button>
+        <button class="tab-btn" :class="{ active: isLogin }" @click="isLogin = true">Вход</button>
+        <button class="tab-btn" :class="{ active: !isLogin }" @click="isLogin = false">Регистрация</button>
       </div>
 
       <!-- Форма входа -->
@@ -26,7 +14,7 @@
           <label>Email</label>
           <input 
             type="email" 
-            v-model="loginForm.email" 
+            v-model="email" 
             placeholder="example@mail.com" 
             required
             class="glass-input"
@@ -38,7 +26,7 @@
           <div class="password-wrapper">
             <input 
               :type="showPassword ? 'text' : 'password'" 
-              v-model="loginForm.password" 
+              v-model="password" 
               placeholder="••••••••" 
               required
               class="glass-input"
@@ -58,7 +46,7 @@
         </div>
 
         <button type="submit" class="auth-btn" :disabled="loading">
-          <span v-if="!loading">Войти</span>
+          <span v-if="!loading" >Войти</span>
           <span v-else class="loader"></span>
         </button>
 
@@ -87,10 +75,10 @@
       <!-- Форма регистрации -->
       <form v-else @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
-          <label>Имя</label>
+          <label>Юзернейм</label>
           <input 
             type="text" 
-            v-model="registerForm.name" 
+            v-model="name" 
             placeholder="Иван Иванов" 
             required
             class="glass-input"
@@ -101,7 +89,7 @@
           <label>Email</label>
           <input 
             type="email" 
-            v-model="registerForm.email" 
+            v-model="reg_email" 
             placeholder="example@mail.com" 
             required
             class="glass-input"
@@ -113,7 +101,7 @@
           <div class="password-wrapper">
             <input 
               :type="showRegisterPassword ? 'text' : 'password'" 
-              v-model="registerForm.password" 
+              v-model="reg_password" 
               placeholder="••••••••" 
               required
               class="glass-input"
@@ -129,7 +117,7 @@
           <div class="password-wrapper">
             <input 
               :type="showConfirmPassword ? 'text' : 'password'" 
-              v-model="registerForm.confirmPassword" 
+              v-model="reg_password_repeat" 
               placeholder="••••••••" 
               required
               class="glass-input"
@@ -189,6 +177,16 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios';
+import { useAuthStore } from '../../stores/authStore';
+
+const authStore = useAuthStore();
+const email = ref('');
+const password = ref('');
+const reg_email = ref('');
+const reg_password = ref('');
+const reg_password_repeat = ref('');
+const name = ref('');
+
 
 const router = useRouter()
 
@@ -201,6 +199,29 @@ const handleLogin = async () => {
         password: password.value
         });
         if(response.data.result == "auth")
+        {
+          console.log("auth");
+          authStore.setUser(response.data.user);
+          router.push('/');
+        }
+    } 
+    catch (error) 
+    {
+      console.error("Ошибка!", error);
+    }
+}
+
+const handleRegister = async () => {
+    try 
+    {
+        const response = await axios.post('/api/json.php', {
+        type: 'register',
+        name: name.value,
+        email: reg_email.value,
+        password: reg_password.value,
+        password_repeat: reg_password.value
+        });
+        if(response.data.result == "good")
         {
           authStore.setUser(response.data.user);
           router.push('/');
@@ -222,81 +243,9 @@ const rememberMe = ref(false)
 const agreeTerms = ref(false)
 const errorMessage = ref('')
 
-// Форма входа
-const loginForm = ref({
-  email: '',
-  password: ''
-})
-
-// Форма регистрации
-const registerForm = ref({
-  name: '',
-  email: '',
-  password: '',
-  confirmPassword: ''
-})
-
-// Обработка входа
-const handleLogin = async () => {
-  errorMessage.value = ''
-  loading.value = true
-
-  try {
-    // Здесь будет ваш API запрос
-    console.log('Login:', loginForm.value)
-    
-    // Имитация запроса
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Успешный вход
-    router.push('/')
-  } catch (error) {
-    errorMessage.value = 'Неверный email или пароль'
-  } finally {
-    loading.value = false
-  }
-}
-
-// Обработка регистрации
-const handleRegister = async () => {
-  errorMessage.value = ''
-
-  // Валидация
-  if (registerForm.value.password !== registerForm.value.confirmPassword) {
-    errorMessage.value = 'Пароли не совпадают'
-    return
-  }
-
-  if (registerForm.value.password.length < 6) {
-    errorMessage.value = 'Пароль должен содержать минимум 6 символов'
-    return
-  }
-
-  if (!agreeTerms.value) {
-    errorMessage.value = 'Необходимо согласиться с условиями использования'
-    return
-  }
-
-  loading.value = true
-
-  try {
-    // Здесь будет ваш API запрос
-    console.log('Register:', registerForm.value)
-    
-    // Имитация запроса
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Успешная регистрация - автоматический вход
-    router.push('/')
-  } catch (error) {
-    errorMessage.value = 'Ошибка регистрации. Попробуйте другой email'
-  } finally {
-    loading.value = false
-  }
-}
-
 // Социальная авторизация
-const socialLogin = (provider) => {
+const socialLogin = (provider) => 
+{
   console.log(`Login with ${provider}`)
   // Здесь будет логика OAuth
 }
