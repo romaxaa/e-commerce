@@ -56,9 +56,9 @@
         </button>
 
         <!-- Профиль / Авторизация -->
-        <div v-if="isAuth" class="profile-dropdown">
+        <div v-if="authStore.isAuthenticated" class="profile-dropdown">
           <button class="action-btn profile-btn" @click="toggleProfileDropdown">
-            <img :src="userAvatar" :alt="userName" class="avatar">
+            <img :src="authStore?.user.avatar" :alt="authStore.user.username" class="avatar">
           </button>
           <div v-if="isProfileOpen" class="dropdown-menu">
             <router-link to="/profile" class="dropdown-item">
@@ -75,6 +75,11 @@
               </svg>
               Мои заказы
             </router-link>
+            <div v-if="authStore.user && authStore.user.group == 99">
+              <router-link to="/admin" class="dropdown-item">
+                Админ панель
+              </router-link>
+            </div>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item logout" @click="logout">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -127,9 +132,11 @@
         <router-link to="/favorites" class="mobile-nav-link" @click="closeMobileMenu">
           <span>❤️</span> Избранное
         </router-link>
+        <div>
         <router-link to="/profile" class="mobile-nav-link" @click="closeMobileMenu">
           <span>👤</span> Профиль
         </router-link>
+        </div>
       </div>
     </transition>
 
@@ -153,10 +160,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/authStore';
 
-const route = useRoute()
+const authStore = useAuthStore();
+
 const router = useRouter()
 
 // Состояния
@@ -166,15 +175,14 @@ const isSearchOpen = ref(false)
 const searchQuery = ref('')
 
 // Данные пользователя (заглушка)
-const isAuth = ref(true)
-const userName = ref('Алексей')
 const userAvatar = ref('https://i.pravatar.cc/150?img=3')
-const cartCount = ref(3)
-const favoritesCount = ref(5)
+const cartCount = ref(0)
+const favoritesCount = ref(0)
 
 // Проверка активной ссылки
-const isActive = (path) => {
-  return route.path === path
+const isActive = (path) => 
+{
+  return router.path === path
 }
 
 // Методы
@@ -219,10 +227,9 @@ const toggleCart = () => {
   console.log('Open cart')
 }
 
-const logout = () => {
-  console.log('Logout')
-  isAuth.value = false
-  isProfileOpen.value = false
+const logout = async () => {
+  await authStore.logout();
+  router.push('/');
 }
 
 // Закрытие выпадающего меню при клике вне

@@ -4,6 +4,8 @@ import Catalog from '../components/catalog.vue';
 import Login from '../components/auth/Login.vue';
 import Profile from '../components/profile.vue';
 import Admin from '../components/admin.vue';
+import Manageproduct from '../components/admin/manage-product.vue';
+import ManageCategory from '../components/admin/manage-category.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -40,6 +42,18 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: Admin,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/manage-product',
+      name: 'manage-product',
+      component: Manageproduct,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/manage-category',
+      name: 'manage-category',
+      component: ManageCategory,
       meta: {guestOnly: false}
     }
   ]

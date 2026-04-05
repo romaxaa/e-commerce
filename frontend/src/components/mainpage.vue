@@ -22,7 +22,7 @@
         <div class="categories">
           <button 
             v-for="category in categories" 
-            :key="category.name"
+            :key="category.id"
             class="category-chip"
             :class="{ active: selectedCategory === category.name }"
             @click="selectedCategory = category.name"
@@ -80,7 +80,7 @@
       <div v-for="product in filteredProducts" :key="product.id" class="product-card glass-panel">
         <!-- Изображение товара -->
         <div class="product-image">
-          <img :src="product.image" :alt="product.name">
+          <img :src="product.img" :alt="product.name">
           <span class="product-discount" v-if="product.discount">-{{ product.discount }}%</span>
           <button class="favorite-btn" @click="toggleFavorite(product.id)">
             <span>{{ product.isFavorite ? '❤️' : '🤍' }}</span>
@@ -89,25 +89,20 @@
 
         <!-- Информация о товаре -->
         <div class="product-info">
-          <div class="product-category">{{ product.category }}</div>
+          <div class="product-category">{{ product.category_name }}</div>
           <h3 class="product-title">{{ product.name }}</h3>
-          
-          <div class="product-rating">
-            <span class="stars">⭐ {{ product.rating }}</span>
-            <span class="reviews">({{ product.reviews }} отзывов)</span>
-          </div>
 
           <div class="product-price">
             <span class="current-price">{{ formatPrice(product.price) }} ₽</span>
-            <span class="old-price" v-if="product.oldPrice">{{ formatPrice(product.oldPrice) }} ₽</span>
+            <span class="old-price">{{ formatPrice(oldPrice) }} ₽</span>
           </div>
 
           <!-- Характеристики -->
-          <div class="product-specs">
+          <!--<div class="product-specs">
             <span v-for="spec in product.specs.slice(0, 2)" :key="spec" class="spec-tag">
               {{ spec }}
             </span>
-          </div>
+          </div>-->
 
           <!-- Кнопки действий -->
           <div class="product-actions">
@@ -165,204 +160,134 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '../stores/authStore'
+
+const authStore = useAuthStore();
 
 // Поиск и фильтры
 const searchQuery = ref('')
 const selectedCategory = ref('')
 const currentPage = ref(1)
-const productsPerPage = 8
+const productsPerPage = 9
 
-// Категории
-const categories = ref([
-  { name: 'Все товары', icon: '📱' },
-  { name: 'Смартфоны', icon: '📱' },
-  { name: 'Ноутбуки', icon: '💻' },
-  { name: 'Наушники', icon: '🎧' },
-  { name: 'Часы', icon: '⌚' },
-  { name: 'Камеры', icon: '📷' },
-  { name: 'Аксессуары', icon: '🎒' }
-])
+const products = ref([]);
+const categories = ref([]);
 
-// Товары
-const products = ref([
+const loadProducts = async () => {
+  const result = await authStore.products();
+  
+  if (!result.success) 
   {
-    id: 1,
-    name: 'iPhone 15 Pro',
-    category: 'Смартфоны',
-    price: 89990,
-    oldPrice: 119990,
-    discount: 25,
-    rating: 4.9,
-    reviews: 1247,
-    isFavorite: false,
-    specs: ['128GB', 'A17 Pro'],
-    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=300&h=300&fit=crop'
-  },
+    console.error('Ошибка загрузки:', result.error);
+  } 
+  else 
   {
-    id: 2,
-    name: 'Samsung Galaxy S24',
-    category: 'Смартфоны',
-    price: 79990,
-    oldPrice: 109990,
-    discount: 27,
-    rating: 4.8,
-    reviews: 892,
-    isFavorite: false,
-    specs: ['256GB', 'AI Phone'],
-    image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=300&h=300&fit=crop'
-  },
-  {
-    id: 3,
-    name: 'MacBook Air M3',
-    category: 'Ноутбуки',
-    price: 119990,
-    oldPrice: 159990,
-    discount: 25,
-    rating: 4.9,
-    reviews: 634,
-    isFavorite: false,
-    specs: ['8GB RAM', '256GB SSD'],
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&h=300&fit=crop'
-  },
-  {
-    id: 4,
-    name: 'AirPods Max',
-    category: 'Наушники',
-    price: 49990,
-    oldPrice: 69990,
-    discount: 28,
-    rating: 4.7,
-    reviews: 423,
-    isFavorite: false,
-    specs: ['White', 'Noise Cancelling'],
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=300&h=300&fit=crop'
-  },
-  {
-    id: 5,
-    name: 'Apple Watch Series 9',
-    category: 'Часы',
-    price: 35990,
-    oldPrice: 45990,
-    discount: 22,
-    rating: 4.8,
-    reviews: 856,
-    isFavorite: false,
-    specs: ['41mm', 'GPS'],
-    image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&h=300&fit=crop'
-  },
-  {
-    id: 6,
-    name: 'Sony WH-1000XM5',
-    category: 'Наушники',
-    price: 24990,
-    oldPrice: 34990,
-    discount: 28,
-    rating: 4.9,
-    reviews: 1123,
-    isFavorite: false,
-    specs: ['Black', 'Noise Cancelling'],
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=300&h=300&fit=crop'
-  },
-  {
-    id: 7,
-    name: 'DJI Mini 4 Pro',
-    category: 'Камеры',
-    price: 69990,
-    oldPrice: 89990,
-    discount: 22,
-    rating: 4.9,
-    reviews: 423,
-    isFavorite: false,
-    specs: ['4K', 'Mini'],
-    image: 'https://images.unsplash.com/photo-1506947411487-a56738267384?w=300&h=300&fit=crop'
-  },
-  {
-    id: 8,
-    name: 'GoPro Hero 12',
-    category: 'Камеры',
-    price: 39990,
-    oldPrice: 49990,
-    discount: 20,
-    rating: 4.8,
-    reviews: 356,
-    isFavorite: false,
-    specs: ['5K', 'Waterproof'],
-    image: 'https://images.unsplash.com/photo-1524143986875-3b098d78b363?w=300&h=300&fit=crop'
+    products.value = result.data || result.products || result;
+    console.log('Загружено продуктов:', products.value.length);
   }
-])
+};
 
-// Фильтрация товаров
+const loadCategories = async () => {
+  const result = await authStore.categories();
+  
+  if (!result.success) 
+  {
+    console.error('Ошибка загрузки:', result.error);
+  } 
+  else 
+  {
+    categories.value = result.data || result.categories || result;
+    console.log('Загружено категорий:', categories.value.length);
+  }
+};
+
+onMounted(async () => {
+  await loadProducts();
+  await loadCategories();
+});
+
+const oldPrice = products.price - 1000;
+
 const filteredProducts = computed(() => {
-  let filtered = products.value
+  // Проверяем, что products.value - массив
+  if (!Array.isArray(products.value) || products.value.length === 0) {
+    return [];
+  }
+  
+  let filtered = [...products.value];
 
   // Поиск
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(product => 
       product.name.toLowerCase().includes(query) ||
       product.category.toLowerCase().includes(query)
-    )
+    );
   }
 
   // Категория
   if (selectedCategory.value && selectedCategory.value !== 'Все товары') {
-    filtered = filtered.filter(product => product.category === selectedCategory.value)
+    filtered = filtered.filter(product => product.category === selectedCategory.value);
   }
 
   // Пагинация
-  const start = (currentPage.value - 1) * productsPerPage
-  const end = start + productsPerPage
-  return filtered.slice(start, end)
-})
+  const start = (currentPage.value - 1) * productsPerPage;
+  const end = start + productsPerPage;
+  return filtered.slice(start, end);
+});
 
 // Общее количество страниц
 const totalPages = computed(() => {
-  let total = products.value
+  if (!Array.isArray(products.value)) return 1;
+  
+  let total = [...products.value];
+  
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     total = total.filter(product => 
       product.name.toLowerCase().includes(query) ||
       product.category.toLowerCase().includes(query)
-    )
+    );
   }
+  
   if (selectedCategory.value && selectedCategory.value !== 'Все товары') {
-    total = total.filter(product => product.category === selectedCategory.value)
+    total = total.filter(product => product.category === selectedCategory.value);
   }
-  return Math.ceil(total.length / productsPerPage)
-})
+  
+  return Math.ceil(total.length / productsPerPage);
+});
 
 // Форматирование цены
 const formatPrice = (price) => {
-  return price.toLocaleString('ru-RU')
-}
+  return price.toLocaleString('ru-RU');
+};
 
 // Добавить в корзину
 const addToCart = (product) => {
-  console.log('Добавлено в корзину:', product)
-  // Здесь будет логика добавления в корзину
-}
+  console.log('Добавлено в корзину:', product);
+};
 
 // Быстрый просмотр
 const quickView = (product) => {
-  console.log('Быстрый просмотр:', product)
-  // Здесь будет модальное окно с быстрым просмотром
-}
+  console.log('Быстрый просмотр:', product);
+};
 
 // Избранное
 const toggleFavorite = (productId) => {
-  const product = products.value.find(p => p.id === productId)
-  if (product) {
-    product.isFavorite = !product.isFavorite
+  const product = products.value.find(p => p.id === productId);
+  if (product) 
+  {
+    product.isFavorite = !product.isFavorite;
   }
-}
+};
 
 // Сброс фильтров
 const resetFilters = () => {
-  searchQuery.value = ''
-  selectedCategory.value = ''
-  currentPage.value = 1
-}
+  searchQuery.value = '';
+  selectedCategory.value = '';
+  currentPage.value = 1;
+};
 </script>
 
 <style scoped>
