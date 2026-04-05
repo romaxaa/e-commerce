@@ -309,4 +309,118 @@ switch ($action)
             echo json_encode(array('result' => 'good', 'user' => $userinfo));
         }
     break 1;
+
+    case 'get_products':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'no_auth']);
+            return;
+        }
+
+        $products = R::getall('SELECT * FROM products');
+
+        echo json_encode(['result' => 'good', 'products' => $products]);
+        return;
+
+        if(empty($products))
+        {
+            echo json_encode(['result' => 'emty']);
+            return;
+        }
+    break 1;
+
+    case 'update-user-info':
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+        error_reporting(E_ALL);
+
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+
+        $currentUser = R::load('users', $_SESSION['logged_user']->id);
+
+
+
+        if(isset($data['username']) && isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
+        {
+            if(R::count('users', "username = ? AND id != ?", [$data['username'], $currentUser->id]) > 0)
+            {
+                echo json_encode(['result' => 'username']);
+                return;
+            }
+            if(R::count('users', "email = ? AND id != ?", [$data['email'], $currentUser->id]) > 0)
+            {
+                echo json_encode(['result' => 'email']);
+                return;
+            }
+
+            if(iconv_strlen($data['name']) < 2 || iconv_strlen($data['surname']) < 2)
+            {
+                echo json_encode(['result' => 'minnames']);
+                return;
+            }
+
+            $updated = false;
+
+            if(!empty($data['username']))
+            {
+                R::exec('UPDATE users SET username = ? WHERE id = ?', htmlspecialchars($data['username'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+            if(!empty($data['name']))
+            {
+                R::exec('UPDATE users SET name = ? WHERE id = ?', htmlspecialchars($data['name'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+            if(!empty($data['surname']))
+            {
+                R::exec('UPDATE users SET surname = ? WHERE id = ?', htmlspecialchars($data['surname'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+            if(!empty($data['email']))
+            {
+                R::exec('UPDATE users SET email = ? WHERE id = ?', htmlspecialchars($data['email'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+            if(!empty($data['phone']))
+            {
+                R::exec('UPDATE users SET phone = ? WHERE id = ?', htmlspecialchars($data['phone'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+            if(!empty($data['birthday']))
+            {
+                R::exec('UPDATE users SET birthday = ? WHERE id = ?', htmlspecialchars($data['birthday'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+            if(!empty($data['bio']))
+            {
+                R::exec('UPDATE users SET birthday = ? WHERE id = ?', htmlspecialchars($data['bio'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                $updated = true;
+            }
+
+            if($updated = true)
+            {
+                echo json_encode(['result' => 'update']);
+                return;
+            }
+            else
+            {
+                echo json_encode(['result' => 'not-update']);
+                return;
+            }
+        }
+    break 1;
+
+    case 'logout':
+        if(isset($_SESSION['logged_user']))
+        {
+            unset($_SESSION["logged_user"]);
+
+            echo json_encode(array('result' => 'good'));
+            return;
+        }   
+    break 1;
 };
