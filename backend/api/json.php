@@ -317,7 +317,7 @@ switch ($action)
             return;
         }
 
-        $products = R::getall('SELECT * FROM products');
+        $products = R::getall('SELECT p.*, c.id, c.name as category_name FROM products p INNER JOIN category c ON p.category_id = c.id');
 
         echo json_encode(['result' => 'good', 'products' => $products]);
         return;
@@ -325,6 +325,50 @@ switch ($action)
         if(empty($products))
         {
             echo json_encode(['result' => 'emty']);
+            return;
+        }
+    break 1;
+
+    case 'get_categories':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+
+        $categories = R::getall('SELECT * FROM category');
+
+        echo json_encode(['result' => 'good', 'categories' => $categories]);
+        return;
+
+        if(empty($categories))
+        {
+            echo json_encode(['result' => 'emty']);
+            return;
+        }
+    break 1;
+
+    case 'create-category':
+        if(isset($data['category_name']) && isset($data['icon']))
+        {
+            if(empty($_SESSION['logged_user']))
+            {
+                echo json_encode(['result' => 'auth']);
+                return;
+            }
+
+            if(iconv_strlen($data['category_name'] < 1))
+            {
+                echo json_encode(['result' => 'min']);
+                return;
+            }
+
+            $category = R::dispense('category');
+            $category->name = htmlspecialchars($data['category_name'], ENT_QUOTES);
+            $category->icon = htmlspecialchars($data['icon'], ENT_QUOTES);
+            $id = R::store($category);
+
+            echo json_encode(['result' => 'good']);
             return;
         }
     break 1;
@@ -344,7 +388,7 @@ switch ($action)
 
 
 
-        if(isset($data['username']) && isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
+        if(isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
         {
             if(R::count('users', "username = ? AND id != ?", [$data['username'], $currentUser->id]) > 0)
             {
@@ -397,11 +441,11 @@ switch ($action)
             }
             if(!empty($data['bio']))
             {
-                R::exec('UPDATE users SET birthday = ? WHERE id = ?', htmlspecialchars($data['bio'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET bio = ? WHERE id = ?', htmlspecialchars($data['bio'], ENT_QUOTES), $_SESSION['logged_user']->id);
                 $updated = true;
             }
 
-            if($updated = true)
+            if($updated == true)
             {
                 echo json_encode(['result' => 'update']);
                 return;

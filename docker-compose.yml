@@ -12,14 +12,20 @@ services:
     depends_on:
       - php
       - frontend
+    networks:
+      - app-network
 
   php:
     build: ./docker/php
+    ports:
+      - "9000:9000"  # ← ДОБАВИТЬ! Экспортируем порт PHP-FPM
     volumes:
       - ./backend:/var/www
     depends_on:
       - mysql
       - redis
+    networks:
+      - app-network
 
   mysql:
     image: mysql:8
@@ -34,6 +40,8 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -46,15 +54,23 @@ services:
       PMA_PORT: 3306
     depends_on:
       - mysql
+    networks:
+      - app-network
 
   redis:
     image: redis:alpine
+    networks:
+      - app-network
 
   websocket:
     build: ./docker/php
     command: php /var/www/websocket/server.php
+    ports:
+      - "2346:2346"  # ← ДОБАВИТЬ порт для WebSocket
     volumes:
       - ./backend:/var/www
+    networks:
+      - app-network
 
   frontend:
     build: ./frontend
@@ -62,8 +78,8 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app          # Монтируем вашу локальную папку
-      - /app/node_modules         # Исключаем node_modules (чтобы не перезаписывать)
+      - ./frontend:/app
+      - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
@@ -71,6 +87,12 @@ services:
     tty: true
     depends_on:
       - php
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   mysql_data:
