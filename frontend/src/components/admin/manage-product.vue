@@ -22,7 +22,7 @@
         <tbody>
           <tr v-for="product in products" :key="product.id">
             <td>#{{ product.id }}</td>
-            <td><img :src="product.image" class="product-thumb"></td>
+            <td><img :src="product.img" class="product-thumb"></td>
             <td>{{ product.name }}</td>
             <td>{{ product.category }}</td>
             <td>{{ formatPrice(product.price) }} ₽</td>
