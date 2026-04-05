@@ -176,7 +176,6 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios';
 import { useAuthStore } from '../../stores/authStore';
 
 const authStore = useAuthStore();
@@ -188,50 +187,26 @@ const reg_password_repeat = ref('');
 const name = ref('');
 
 
-const router = useRouter()
+const router = useRouter();
 
 const handleLogin = async () => {
-    try 
-    {
-        const response = await axios.post('/api/json.php', {
-        type: 'login',
-        email: email.value,
-        password: password.value
-        });
-        if(response.data.result == "auth")
-        {
-          console.log("auth");
-          authStore.setUser(response.data.user);
-          router.push('/');
-        }
-    } 
-    catch (error) 
-    {
-      console.error("Ошибка!", error);
-    }
-}
+  const result = await authStore.login(email.value, password.value);
+  
+  if(result.success) 
+  {
+    router.push('/');
+  }
+};
 
 const handleRegister = async () => {
-    try 
-    {
-        const response = await axios.post('/api/json.php', {
-        type: 'register',
-        name: name.value,
-        email: reg_email.value,
-        password: reg_password.value,
-        password_repeat: reg_password.value
-        });
-        if(response.data.result == "good")
-        {
-          authStore.setUser(response.data.user);
-          router.push('/');
-        }
-    } 
-    catch (error) 
-    {
-      console.error("Ошибка!", error);
-    }
-}
+  const result = await authStore.register(name.value, reg_email.value, reg_password.value, reg_password_repeat.value);
+
+  if(result.success)
+  {
+    authStore.setUser(response.data.user);
+    router.push('/');
+  }
+};
 
 // Состояние
 const isLogin = ref(true)
