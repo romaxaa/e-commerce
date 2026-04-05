@@ -16,11 +16,11 @@
             <span class="nav-icon">📊</span>
             <span class="nav-label">Дашборд</span>
           </router-link>
-          <router-link to="/admin/categories" class="nav-item" :class="{ active: $route.path === '/admin/categories' }">
+          <router-link to="/manage-category" class="nav-item" :class="{ active: $route.path === '/manage-category' }">
             <span class="nav-icon">📁</span>
             <span class="nav-label">Категории</span>
           </router-link>
-          <router-link to="/admin/products" class="nav-item" :class="{ active: $route.path === '/admin/products' }">
+          <router-link to="/manage-product" class="nav-item" :class="{ active: $route.path === '/manage-product' }">
             <span class="nav-icon">📦</span>
             <span class="nav-label">Товары</span>
           </router-link>
@@ -176,8 +176,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/authStore';
+
+const authStore = useAuthStore();
+
+onMounted(async () => 
+{
+    // Если данных в сторе еще нет, загружаем их один раз
+    if (!authStore.user) 
+    {
+      await authStore.checkAuth();
+    }
+
+    // Если после проверки пользователя всё еще нет — на выход
+    if (!authStore.user || !authStore.user.group == 99)
+    {
+      router.push("/");
+    }
+});
 
 const route = useRoute()
 
