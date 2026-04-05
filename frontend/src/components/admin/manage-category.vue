@@ -13,8 +13,6 @@
             <th>ID</th>
             <th>Иконка</th>
             <th>Название</th>
-            <th>Товаров</th>
-            <th>Статус</th>
             <th>Действия</th>
           </tr>
         </thead>
@@ -22,13 +20,7 @@
           <tr v-for="category in categories" :key="category.id">
             <td>#{{ category.id }}</td>
             <td><span class="category-icon">{{ category.icon }}</span></td>
-            <td>{{ category.name }}</td>
-            <td>{{ category.productCount }}</td>
-            <td>
-              <span class="status-badge" :class="category.active ? 'active' : 'inactive'">
-                {{ category.active ? 'Активна' : 'Скрыта' }}
-              </span>
-            </td>
+            <td>{{ category.name }}</td>   
             <td class="actions">
               <button class="action-btn edit" @click="editCategory(category)">✏️</button>
               <button class="action-btn delete" @click="deleteCategory(category.id)">🗑️</button>
@@ -52,16 +44,6 @@
               <label>Иконка (emoji)</label>
               <input type="text" v-model="categoryForm.icon" placeholder="📱" maxlength="2" class="glass-input">
             </div>
-            <div class="form-group">
-              <label>Описание</label>
-              <textarea v-model="categoryForm.description" rows="3" class="glass-input"></textarea>
-            </div>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="categoryForm.active">
-                <span>Активна</span>
-              </label>
-            </div>
             <div class="modal-actions">
               <button type="button" class="cancel-btn" @click="showModal = false">Отмена</button>
               <button type="submit" class="save-btn">Сохранить</button>
@@ -74,7 +56,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useAuthStore } from '../../stores/authStore';
 const authStore = useAuthStore();
 
 onMounted(async () => 
@@ -90,7 +73,11 @@ onMounted(async () =>
     {
       router.push("/");
     }
+
+    loadCategories();
 });
+
+const categories = computed(() => authStore.categories);
 
 const showModal = ref(false)
 const isEditing = ref(false)
@@ -103,13 +90,23 @@ const categoryForm = ref({
   active: true
 })
 
-const categories = ref([
-  { id: 1, name: 'Смартфоны', icon: '📱', productCount: 156, active: true },
-  { id: 2, name: 'Ноутбуки', icon: '💻', productCount: 89, active: true },
-  { id: 3, name: 'Наушники', icon: '🎧', productCount: 123, active: true },
-  { id: 4, name: 'Часы', icon: '⌚', productCount: 67, active: true },
-  { id: 5, name: 'Камеры', icon: '📷', productCount: 45, active: false }
-])
+const loadCategories = async () => {
+
+    const result = await authStore.categories();
+  
+    if (!result.success) 
+    {
+        console.error('Ошибка загрузки:', result.error);
+    }
+}
+
+const saveCategory = async () => {
+    const result = await authStore.createCategory(categoryForm.name, categoryForm.icon);
+    if (!result.success)  
+    {
+        console.error('result.error');
+    }
+}
 
 const openCreateModal = () => {
   isEditing.value = false
@@ -122,23 +119,6 @@ const editCategory = (category) => {
   editingId.value = category.id
   categoryForm.value = { ...category }
   showModal.value = true
-}
-
-const saveCategory = () => {
-  if (isEditing.value) {
-    const index = categories.value.findIndex(c => c.id === editingId.value)
-    if (index !== -1) {
-      categories.value[index] = { ...categoryForm.value, id: editingId.value, productCount: categories.value[index].productCount }
-    }
-  } else {
-    const newCategory = {
-      ...categoryForm.value,
-      id: Date.now(),
-      productCount: 0
-    }
-    categories.value.push(newCategory)
-  }
-  showModal.value = false
 }
 
 const deleteCategory = (id) => {
