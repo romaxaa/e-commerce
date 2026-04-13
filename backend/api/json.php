@@ -9,7 +9,6 @@ session_start();
 
 use Namshi\JOSE\SimpleJWS;
 
-$inputJSON = file_get_contents('php://input');
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (is_null($data)) 
@@ -311,11 +310,6 @@ switch ($action)
     break 1;
 
     case 'get_products':
-        if(empty($_SESSION['logged_user']))
-        {
-            echo json_encode(['result' => 'no_auth']);
-            return;
-        }
 
         $products = R::getall('SELECT p.*, c.id, c.name as category_name FROM products p INNER JOIN category c ON p.category_id = c.id');
 
@@ -330,11 +324,6 @@ switch ($action)
     break 1;
 
     case 'get_categories':
-        if(empty($_SESSION['logged_user']))
-        {
-            echo json_encode(['result' => 'auth']);
-            return;
-        }
 
         $categories = R::getall('SELECT * FROM category');
 
@@ -349,28 +338,87 @@ switch ($action)
     break 1;
 
     case 'create-category':
-        if(isset($data['category_name']) && isset($data['icon']))
+
+        if(!isset($data['category_name']) || !isset($data['icon']))
         {
-            if(empty($_SESSION['logged_user']))
-            {
-                echo json_encode(['result' => 'auth']);
-                return;
-            }
-
-            if(iconv_strlen($data['category_name'] < 1))
-            {
-                echo json_encode(['result' => 'min']);
-                return;
-            }
-
-            $category = R::dispense('category');
-            $category->name = htmlspecialchars($data['category_name'], ENT_QUOTES);
-            $category->icon = htmlspecialchars($data['icon'], ENT_QUOTES);
-            $id = R::store($category);
-
-            echo json_encode(['result' => 'good']);
+            echo json_encode(['result' => 'error']);
             return;
         }
+        
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+        
+        if($_SESSION['logged_user']->group != 99)
+        {
+            echo json_encode(['result' => 'group']);
+            return;
+        }
+        
+        if(iconv_strlen($data['category_name']) < 1)
+        {
+            echo json_encode(['result' => 'min']);
+            return;
+        }
+
+        try 
+        {
+            $category = R::dispense('category');
+            $category->name = htmlspecialchars($data['category_name'], ENT_QUOTES, 'UTF-8');
+            $category->icon = htmlspecialchars($data['icon'], ENT_QUOTES, 'UTF-8');
+            $id = R::store($category);
+            
+            echo json_encode(['result' => 'good']);
+            return;
+            
+        } catch (Exception $e) 
+        {
+            echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+            return;
+        }
+    
+    break 1;
+
+    case 'update-category':
+        if(!isset($data['id']) || !isset($data['name']) || !isset($data['icon']))
+        {
+            echo json_encode(['result' => 'no_data']);
+            return;
+        }
+
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+        
+        if($_SESSION['logged_user']->group != 99)
+        {
+            echo json_encode(['result' => 'group']);
+            return;
+        }
+        
+        if(iconv_strlen($data['name']) < 1)
+        {
+            echo json_encode(['result' => 'min']);
+            return;
+        }
+
+        try 
+        {
+            R::exec('UPDATE category SET name = ? and icon = ? WHERE id = ?', [htmlspecialchars($data['name'], ENT_QUOTES, 'UTF-8'), htmlspecialchars($data['icon'], ENT_QUOTES, 'UTF-8'), $data['id']]);
+            
+            echo json_encode(['result' => 'good']);
+            return;
+            
+        } catch (Exception $e) 
+        {
+            echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+            return;
+        }
+
     break 1;
 
     case 'update-user-info':
