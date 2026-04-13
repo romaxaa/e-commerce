@@ -42,7 +42,7 @@
             </div>
             <div class="form-group">
               <label>Иконка (emoji)</label>
-              <input type="text" v-model="categoryForm.icon" placeholder="📱" maxlength="2" class="glass-input">
+              <input type="text" v-model="categoryForm.icon" maxlength="2" class="glass-input">
             </div>
             <div class="modal-actions">
               <button type="button" class="cancel-btn" @click="showModal = false">Отмена</button>
@@ -86,7 +86,6 @@ const editingId = ref(null)
 const categoryForm = ref({
   name: '',
   icon: '📁',
-  description: '',
   active: true
 })
 
@@ -100,17 +99,28 @@ const loadCategories = async () => {
     }
 }
 
-const saveCategory = async () => {
-    const result = await authStore.createCategory(categoryForm.name, categoryForm.icon);
+const updateCategory = async () => {
+
+    const result = await authStore.updateCategory(editingId ,categoryForm.value.name, categoryForm.value.icon);
+
     if (!result.success)  
     {
-        console.error('result.error');
+      console.log(editingId);
+        console.error(result.error);
+    }
+}
+
+const saveCategory = async () => {
+    const result = await authStore.createCategory(categoryForm.value.name, categoryForm.value.icon);
+    if (!result.success)  
+    {
+        console.error(result.error);
     }
 }
 
 const openCreateModal = () => {
   isEditing.value = false
-  categoryForm.value = { name: '', icon: '📁', description: '', active: true }
+  categoryForm.value = { name: '', icon: '📁', active: true } 
   showModal.value = true
 }
 
