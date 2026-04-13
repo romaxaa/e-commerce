@@ -19,7 +19,8 @@ export const useAuthStore = defineStore('auth', {
     categories: null
   }),
 
-  getters: {
+  getters: 
+  {
     isAuthenticated: (state) => {
       return !!state.user && state.user !== null;
     },
@@ -38,9 +39,11 @@ export const useAuthStore = defineStore('auth', {
       this.user = userData;
       
       // Сохраняем в localStorage для персистентности
-      if (userData) {
+      if (userData) 
+      {
         localStorage.setItem('user', JSON.stringify(userData));
-      } else {
+      } else 
+      {
         localStorage.removeItem('user');
       }
     },
@@ -119,6 +122,39 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async updateCategory(id, name, icon)
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+        type: 'update-category',
+        id: id,
+        name: name,
+        icon: icon
+        });
+
+        if(response.data.result === 'good')
+        {
+          console.log('good!');
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch (error) 
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      } 
+       finally 
+      {
+        this.loading = false;
+      }
+    },
+
     async createCategory(name, icon)
     {
       try
@@ -132,7 +168,7 @@ export const useAuthStore = defineStore('auth', {
         if(response.data.result === 'good')
         {
           console.log('good!');
-          return { success: false, error: this.error };
+          return { success: true, data: response.data };
         }
         else 
         {
@@ -177,7 +213,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async products()
+    async fetchProducts()
     {
       try
       {
@@ -226,7 +262,7 @@ export const useAuthStore = defineStore('auth', {
       {
         const response = await axios.post('/api/json.php', 
           {
-            type: 'update-user-info',
+              type: 'update-user-info',
               name: name,
               surname: surname,
               email: email,
