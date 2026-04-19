@@ -1,10 +1,12 @@
 <script setup>
 import TheHeader from './components/header.vue';
 import TheFooter from './components/footer.vue';
+import AlertContainer from './components/elements/AlertContainer.vue';
 </script>
 
 <template>
   <TheHeader/>
+  <AlertContainer />
   <router-view />
   <TheFooter/>
 </template>
