@@ -7,6 +7,7 @@ import Admin from '../components/admin.vue';
 import Manageproduct from '../components/admin/manage-product.vue';
 import ManageCategory from '../components/admin/manage-category.vue';
 import ProductView from '../components/product-view.vue';
+import notfound from '../components/notfound.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -31,7 +32,8 @@ const router = createRouter({
     {
       path: '/:pathMatch(.*)*',
       name: 'notfound',
-      redirect: '/'
+      component: notfound,
+      meta: { guestOnly: false }
     },
     {
       path: '/profile',
@@ -58,10 +60,11 @@ const router = createRouter({
       meta: {guestOnly: false}
     },
     {
-      path: '/view',
+      path: '/product/:slug',
       name: 'product-view',
       component: ProductView,
-      meta: {guestOnly: false}
+      meta: {guestOnly: false},
+      props: true
     }
   ]
 });
