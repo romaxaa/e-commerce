@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
-import { useRouter } from 'vue-router'
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
@@ -157,7 +157,7 @@ export const useAuthStore = defineStore('auth', {
 
         if(response.data.result === 'good')
         {
-          console.log('good!');
+          //console.log('good!');
           return { success: true, data: response.data };
         }
         else 
@@ -221,7 +221,7 @@ export const useAuthStore = defineStore('auth', {
 
         if(response.data.result === 'good')
         {
-          console.log('good!');
+          //console.log('good!');
           return { success: true, data: response.data };
         }
         else 
@@ -301,7 +301,47 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async deleteProduct()
+    async updateProduct(id, name, category, price, oldPrice, stock, description, image, isNew, isPopular)
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'update-product',
+          id: id,
+          name: name,
+          category: category,
+          price: price,
+          oldPrice: oldPrice,
+          stock: stock,
+          description: description,
+          image: image,
+          isNew: isNew,
+          isPopular: isPopular
+        });
+
+        if(response.data.result === 'good')
+        {
+          console.log('good!');
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch (error) 
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      } 
+       finally 
+      {
+        this.loading = false;
+      }
+    },
+
+    async deleteProduct(id)
     {
       try
       {
