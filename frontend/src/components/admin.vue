@@ -58,9 +58,10 @@
               <input type="text" placeholder="Поиск..." class="search-input glass-input">
             </div>
             <div class="admin-profile">
-              <img :src="admin.avatar" alt="Admin" class="admin-avatar">
+              <img :src="authStore.user.avatar" alt="Admin" class="admin-avatar">
               <div class="admin-info">
-                <span class="admin-name">{{ admin.name }}</span>
+                <!--<span class="admin-name">{{ admin.name }}</span>-->
+                <span class="admin-name">{{ authStore.user.username }}</span>
                 <span class="admin-role">Администратор</span>
               </div>
             </div>

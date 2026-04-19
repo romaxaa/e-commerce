@@ -6,6 +6,7 @@ import Profile from '../components/profile.vue';
 import Admin from '../components/admin.vue';
 import Manageproduct from '../components/admin/manage-product.vue';
 import ManageCategory from '../components/admin/manage-category.vue';
+import ProductView from '../components/product-view.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -54,6 +55,12 @@ const router = createRouter({
       path: '/manage-category',
       name: 'manage-category',
       component: ManageCategory,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/view',
+      name: 'product-view',
+      component: ProductView,
       meta: {guestOnly: false}
     }
   ]

@@ -122,6 +122,61 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    //работа с категориями
+    async fetchCategories()
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {type: 'get_categories'});
+
+        if(response.data.result === 'good')
+        {
+          this.categories = response.data.categories;
+          return { success: true, categories: this.categories };
+        }
+      }
+      catch(error)
+      {
+        return { success: false, error: this.error };
+      }
+      finally
+      {
+        this.isLoaded = true;
+      }
+    },
+
+    async createCategory(name, icon)
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'create-category',
+          category_name: name,
+          icon: icon
+        }); 
+
+        if(response.data.result === 'good')
+        {
+          console.log('good!');
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch (error) 
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      } 
+       finally 
+      {
+        this.loading = false;
+      }
+    },
+
     async updateCategory(id, name, icon)
     {
       try
@@ -155,15 +210,105 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async createCategory(name, icon)
+    async deleteCategory(id)
     {
       try
       {
         const response = await axios.post('/api/json.php', {
-          type: 'create-category',
-          category_name: name,
-          icon: icon
-        }); 
+        type: 'delete-category',
+        id: id
+        });
+
+        if(response.data.result === 'good')
+        {
+          console.log('good!');
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch (error) 
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      } 
+       finally 
+      {
+        this.loading = false;
+      }
+    },
+
+    async fetchProducts()
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {type: 'get_products'});
+        if(response.data.result === 'good')
+        {
+          this.products = response.data.products;
+          return { success: true, products: this.products };
+        }
+      }
+      catch (error) 
+      {
+        return { success: false, error: this.error };
+      } 
+      finally 
+      {
+        this.isLoaded = true;
+      }
+    },
+
+    async createProduct(name, category, price, oldPrice, stock, description, image, isNew, isPopular)
+    { 
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'create-product',
+          name: name,
+          category: category,
+          price: price,
+          oldPrice: oldPrice,
+          stock: stock,
+          description: description,
+          image: image,
+          isNew: isNew,
+          isPopular: isPopular
+        });
+
+        if(response.data.result === 'good')
+        {
+          console.log('good!');
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch (error) 
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      } 
+       finally 
+      {
+        this.loading = false;
+      }
+    },
+
+    async deleteProduct()
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'delete-product',
+          id: id
+        });
 
         if(response.data.result === 'good')
         {
@@ -208,49 +353,6 @@ export const useAuthStore = defineStore('auth', {
         this.user = null;
       } 
       finally 
-      {
-        this.isLoaded = true;
-      }
-    },
-
-    async fetchProducts()
-    {
-      try
-      {
-        const response = await axios.post('/api/json.php', {type: 'get_products'});
-        if(response.data.result === 'good')
-        {
-          this.products = response.data.products;
-          return { success: true, products: this.products };
-        }
-      }
-      catch (error) 
-      {
-        return { success: false, error: this.error };
-      } 
-      finally 
-      {
-        this.isLoaded = true;
-      }
-    },
-
-    async categories()
-    {
-      try
-      {
-        const response = await axios.post('/api/json.php', {type: 'get_categories'});
-
-        if(response.data.result === 'good')
-        {
-          this.categories = response.data.categories;
-          return { success: true, categories: this.categories };
-        }
-      }
-      catch(error)
-      {
-        return { success: false, error: this.error };
-      }
-      finally
       {
         this.isLoaded = true;
       }

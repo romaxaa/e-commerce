@@ -110,7 +110,7 @@
               🛒 В корзину
             </button>
             <button class="quick-view-btn" @click="quickView(product)">
-              👁️ Быстрый просмотр
+              👁️ Просмотр
             </button>
           </div>
         </div>
@@ -145,7 +145,7 @@
     </div>
 
     <!-- Баннер подписки -->
-    <div class="newsletter-banner glass-panel">
+    <div v-if="!authStore.user" class="newsletter-banner glass-panel">
       <div class="banner-content">
         <span class="banner-badge">🎁 Спецпредложение</span>
         <h3>Скидка 30% на первый заказ</h3>
@@ -156,6 +156,7 @@
         </div>
       </div>
     </div>
+    
   </div>
 </template>
 
@@ -175,7 +176,7 @@ const products = ref([]);
 const categories = ref([]);
 
 const loadProducts = async () => {
-  const result = await authStore.products();
+  const result = await authStore.fetchProducts();
   
   if (!result.success) 
   {
@@ -188,7 +189,7 @@ const loadProducts = async () => {
   }
 };
 
-const loadCategories = async () => {
+/*const loadCategories = async () => {
   const result = await authStore.categories();
   
   if (!result.success) 
@@ -200,11 +201,10 @@ const loadCategories = async () => {
     categories.value = result.data || result.categories || result;
     console.log('Загружено категорий:', categories.value.length);
   }
-};
+};*/
 
 onMounted(async () => {
   await loadProducts();
-  await loadCategories();
 });
 
 const oldPrice = products.price - 1000;

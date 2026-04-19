@@ -24,7 +24,7 @@
             <td>#{{ product.id }}</td>
             <td><img :src="product.img" class="product-thumb"></td>
             <td>{{ product.name }}</td>
-            <td>{{ product.category }}</td>
+            <td>{{ product.category_name }}</td>
             <td>{{ formatPrice(product.price) }} ₽</td>
             <td>{{ product.stock }} шт.</td>
             <td class="actions">
@@ -50,7 +50,7 @@
               <div class="form-group">
                 <label>Категория</label>
                 <select v-model="productForm.category" class="glass-input">
-                  <option v-for="cat in categories" :key="cat.id">{{ cat.name }}</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </select>
               </div>
             </div>
@@ -127,18 +127,19 @@ onMounted(async () =>
     }
 
     loadProducts();
+    loadCategories();
 });
 
 const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref(null)
 
-const categories = ref(['Смартфоны', 'Ноутбуки', 'Наушники', 'Часы', 'Камеры', 'Аксессуары'])
+//const categories = ref(['Смартфоны', 'Ноутбуки', 'Наушники', 'Часы', 'Камеры', 'Аксессуары'])
 
 const productForm = ref
 ({
   name: '',
-  category: 'Смартфоны',
+  category_id: null,
   price: 0,
   oldPrice: null,
   stock: 0,
@@ -149,12 +150,26 @@ const productForm = ref
 })
 
 const products = computed(() => authStore.products);
+const categories = computed(() => authStore.categories)
 //const productsLoading = computed(() => authStore.productsLoading);
 //const productsError = computed(() => authStore.productsError);
 
+const loadCategories = async () => {
+  const result = await authStore.fetchCategories();
+  
+  if (result.success) 
+  {
+    console.log('категории загружены');
+  }
+  else 
+  {
+    console.error('Ошибка загрузки:', result.error);
+  }
+};
+
 // Метод для загрузки продуктов
 const loadProducts = async () => {
-  const result = await authStore.products();
+  const result = await authStore.fetchProducts();
   
   if (result.success) 
   {
@@ -166,47 +181,13 @@ const loadProducts = async () => {
   }
 };
 
-/*const products = ref([
-  {
-    id: 1,
-    name: 'iPhone 15 Pro',
-    category: 'Смартфоны',
-    price: 89990,
-    oldPrice: 119990,
-    stock: 45,
-    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=80&h=80&fit=crop'
-  },
-  {
-    id: 2,
-    name: 'MacBook Air M3',
-    category: 'Ноутбуки',
-    price: 119990,
-    oldPrice: 159990,
-    stock: 23,
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=80&h=80&fit=crop'
-  },
-  {
-    id: 3,
-    name: 'Sony WH-1000XM5',
-    category: 'Наушники',
-    price: 24990,
-    oldPrice: 34990,
-    stock: 67,
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=80&h=80&fit=crop'
-  }
-])*/
-
-/*const products = ref([
-  authStore.products
-])*/
-
 const formatPrice = (price) => {
   return price.toLocaleString('ru-RU')
 }
 
 const openCreateModal = () => {
   isEditing.value = false
-  productForm.value = { name: '', category: 'Смартфоны', price: 0, oldPrice: null, stock: 0, description: '', image: '', isNew: false, isPopular: false }
+  productForm.value = { name: '', category_id: null, price: null, oldPrice: null, stock: null, description: '', image: '', isNew: false, isPopular: false }
   showModal.value = true
 }
 
@@ -217,23 +198,36 @@ const editProduct = (product) => {
   showModal.value = true
 }
 
-const saveProduct = () => {
-  if (isEditing.value) {
-    const index = products.value.findIndex(p => p.id === editingId.value)
-    if (index !== -1) {
-      products.value[index] = { ...productForm.value, id: editingId.value }
-    }
-  } else {
-    products.value.push({ ...productForm.value, id: Date.now() })
+const saveProduct = async () => {
+  const responce = await authStore.createProduct(productForm.value.name, productForm.value.category_id, productForm.value.price, productForm.value.oldPrice, productForm.value.stock, productForm.value.description, productForm.value.image, productForm.value.isNew, productForm.value.isPopular);
+  if (result.success)  
+  {
+    showModal.value = false;
+    console.log(data);
+    await loadProducts();
   }
-  showModal.value = false
+  else
+  {
+    console.error(result.error);
+  }
 }
 
-const deleteProduct = (id) => {
-  if (confirm('Вы уверены, что хотите удалить этот товар?')) {
-    products.value = products.value.filter(p => p.id !== id)
+const deleteProduct = async (id) => {
+  if (confirm('Вы уверены, что хотите удалить этот товар?')) 
+  {
+    const responce = await authStore.deleteProduct(id);
+    if (result.success)  
+    {
+      showModal.value = false;
+      await loadProducts();
+    }
+    else
+    {
+      console.error(result.error);
+    }
   }
 }
+
 </script>
 
 <style scoped>

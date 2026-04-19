@@ -91,7 +91,7 @@ const categoryForm = ref({
 
 const loadCategories = async () => {
 
-    const result = await authStore.categories();
+    const result = await authStore.fetchCategories();
   
     if (!result.success) 
     {
@@ -106,15 +106,20 @@ const updateCategory = async () => {
     if (!result.success)  
     {
       console.log(editingId);
-        console.error(result.error);
+      console.error(result.error);
     }
 }
 
 const saveCategory = async () => {
     const result = await authStore.createCategory(categoryForm.value.name, categoryForm.value.icon);
-    if (!result.success)  
+    if (result.success)  
     {
-        console.error(result.error);
+      showModal.value = false;
+      await loadCategories();
+    }
+    else
+    {
+      console.error(result.error);
     }
 }
 
@@ -131,9 +136,19 @@ const editCategory = (category) => {
   showModal.value = true
 }
 
-const deleteCategory = (id) => {
-  if (confirm('Вы уверены, что хотите удалить эту категорию?')) {
-    categories.value = categories.value.filter(c => c.id !== id)
+const deleteCategory = async (id) => {
+  if (confirm('Вы уверены, что хотите удалить эту категорию?')) 
+  {
+    const result = await authStore.deleteCategory(id);
+    if (result.success)  
+    {
+      showModal.value = false;
+      await loadCategories();
+    }
+    else
+    {
+      console.log(result.error);
+    }
   }
 }
 </script>

@@ -323,6 +323,79 @@ switch ($action)
         }
     break 1;
 
+    case 'create-product':
+        if(!isset($data['name']) && !isset($data['category']) && !isset($data['price']) && !isset($data['stock']) && !isset($data['description']) && !isset($data['image']))
+        {
+            echo json_decode(['result' => 'no_data']);
+            return;
+        }
+        
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }   
+
+        if($_SESSION['logged_user']->group != 99)
+        {
+            echo json_encode(['result' => 'group']);
+            return;
+        }
+
+        try 
+        {
+            $products = R::dispense('products');
+            $products->name = htmlspecialchars($data['name'], ENT_QUOTES, 'UTF-8');
+            $products->subtitle = htmlspecialchars($data['description'], ENT_QUOTES, 'UTF-8');
+            $products->category_id = htmlspecialchars($data['category'], ENT_QUOTES, 'UTF-8');
+            $products->specifications = null;
+            $products->img = htmlspecialchars($data['image'], ENT_QUOTES, 'UTF-8');
+            $products->price = htmlspecialchars($data['price'], ENT_QUOTES, 'UTF-8');
+            $products->oldprice = htmlspecialchars($data['oldPrice'], ENT_QUOTES, 'UTF-8');
+            $products->stock = htmlspecialchars($data['stock'], ENT_QUOTES, 'UTF-8');
+            $products->isNew = htmlspecialchars($data['isNew'], ENT_QUOTES, 'UTF-8');
+            $products->isPopular = htmlspecialchars($data['isPopular'], ENT_QUOTES, 'UTF-8');
+            $id = R::store($products);
+
+            echo json_encode(['result' => 'good']);
+            return;
+            
+        } catch (Exception $e) 
+        {
+            echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+            return;
+        }
+    break 1;
+
+    case 'delete-product':
+        if(isset($data['id']))
+        {
+            if(empty($_SESSION['logged_user']))
+            {
+                echo json_encode(['result' => 'auth']);
+                return;
+            }
+
+            if($_SESSION['logged_user']->group != 99)
+            {
+                echo json_encode(['result' => 'group']);
+                return;
+            }
+
+            try 
+            {
+                R::exec('DELETE FROM products WHERE id = ?', [$data['id']]);
+                echo json_encode(['result' => 'good']);
+                return;
+                
+            } catch (Exception $e) 
+            {
+                echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+                return;
+            }
+        }
+    break 1;
+
     case 'get_categories':
 
         $categories = R::getall('SELECT * FROM category');
@@ -419,6 +492,35 @@ switch ($action)
             return;
         }
 
+    break 1;
+
+    case 'delete-category':
+        if(isset($data['id']))
+        {
+            if(empty($_SESSION['logged_user']))
+            {
+                echo json_encode(['result' => 'auth']);
+                return;
+            }
+            
+            if($_SESSION['logged_user']->group != 99)
+            {
+                echo json_encode(['result' => 'group']);
+                return;
+            }
+
+            try 
+            {
+                R::exec('DELETE FROM category WHERE id = ?', [$data['id']]);    
+                echo json_encode(['result' => 'good']);
+                return;
+                
+            } catch (Exception $e) 
+            {
+                echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+                return;
+            }
+        }
     break 1;
 
     case 'update-user-info':
