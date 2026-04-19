@@ -58,7 +58,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../../stores/authStore';
+import { useAlertStore } from '../../stores/alertStore'; 
+
 const authStore = useAuthStore();
+const alerts = useAlertStore();
 
 onMounted(async () => 
 {
@@ -99,27 +102,35 @@ const loadCategories = async () => {
     }
 }
 
-const updateCategory = async () => {
-
-    const result = await authStore.updateCategory(editingId ,categoryForm.value.name, categoryForm.value.icon);
-
-    if (!result.success)  
-    {
-      console.log(editingId);
-      console.error(result.error);
-    }
-}
-
 const saveCategory = async () => {
-    const result = await authStore.createCategory(categoryForm.value.name, categoryForm.value.icon);
-    if (result.success)  
+    if(isEditing.value)
     {
-      showModal.value = false;
-      await loadCategories();
+      const result = await authStore.updateCategory(editingId.value ,categoryForm.value.name, categoryForm.value.icon);
+
+      if (result.success)  
+      {
+        showModal.value = false;
+        await loadCategories();
+      }
+      else
+      {
+        console.error(result.error);
+      }
     }
-    else
+    else 
     {
-      console.error(result.error);
+      const result = await authStore.createCategory(categoryForm.value.name, categoryForm.value.icon);
+
+      if (result.success)  
+      {
+        alerts.show('Успешно создано!', 'success');
+        showModal.value = false;
+        await loadCategories();
+      }
+      else
+      {
+        console.error(result.error);
+      }
     }
 }
 
@@ -142,6 +153,7 @@ const deleteCategory = async (id) => {
     const result = await authStore.deleteCategory(id);
     if (result.success)  
     {
+      alerts.show('Успешно удалено!', 'success');
       showModal.value = false;
       await loadCategories();
     }
