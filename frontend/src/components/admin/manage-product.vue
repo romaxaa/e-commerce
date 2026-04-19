@@ -49,7 +49,7 @@
               </div>
               <div class="form-group">
                 <label>Категория</label>
-                <select v-model="productForm.category" class="glass-input">
+                <select v-model="productForm.category_id" class="glass-input">
                   <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </select>
               </div>
@@ -107,9 +107,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const authStore = useAuthStore();
 
 onMounted(async () => 
@@ -121,7 +123,7 @@ onMounted(async () =>
     }
 
     // Если после проверки пользователя всё еще нет — на выход
-    if (!authStore.user || !authStore.user.group == 99)
+    if (!authStore.user || authStore.user.group != 99)
     {
       router.push("/");
     }
@@ -134,13 +136,11 @@ const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref(null)
 
-//const categories = ref(['Смартфоны', 'Ноутбуки', 'Наушники', 'Часы', 'Камеры', 'Аксессуары'])
-
 const productForm = ref
 ({
   name: '',
   category_id: null,
-  price: 0,
+  price: null,
   oldPrice: null,
   stock: 0,
   description: '',
@@ -199,23 +199,40 @@ const editProduct = (product) => {
 }
 
 const saveProduct = async () => {
-  const responce = await authStore.createProduct(productForm.value.name, productForm.value.category_id, productForm.value.price, productForm.value.oldPrice, productForm.value.stock, productForm.value.description, productForm.value.image, productForm.value.isNew, productForm.value.isPopular);
-  if (result.success)  
+  let result;
+  
+  if(isEditing.value)
   {
-    showModal.value = false;
-    console.log(data);
-    await loadProducts();
+    const result = await authStore.updateProduct(editingId.value, productForm.value.name, productForm.value.category_id, productForm.value.price, productForm.value.oldPrice, productForm.value.stock, productForm.value.description, productForm.value.image, productForm.value.isNew, productForm.value.isPopular);
+    if(result.success)
+    {
+      showModal.value = false;
+      await loadProducts();
+    }
+    else
+    {
+      console.error(result.error);
+    }
   }
   else
   {
-    console.error(result.error);
+    result = await authStore.createProduct(productForm.value.name, productForm.value.category_id, productForm.value.price, productForm.value.oldPrice, productForm.value.stock, productForm.value.description, productForm.value.image, productForm.value.isNew, productForm.value.isPopular);
+    if (result.success)  
+    {
+      showModal.value = false;
+      await loadProducts();
+    }
+    else
+    {
+      console.error(result.error);
+    } 
   }
 }
 
 const deleteProduct = async (id) => {
   if (confirm('Вы уверены, что хотите удалить этот товар?')) 
   {
-    const responce = await authStore.deleteProduct(id);
+    const result = await authStore.deleteProduct(id);
     if (result.success)  
     {
       showModal.value = false;

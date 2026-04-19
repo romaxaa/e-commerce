@@ -1,6 +1,6 @@
 <!-- ProductDetail.vue - Страница просмотра товара -->
 <template>
-  <div class="product-detail-page">
+  <div v-if="product" class="product-detail-page">
     <div class="product-container">
       <!-- Хлебные крошки -->
       <div class="breadcrumbs">
@@ -46,9 +46,12 @@
           </div>
 
           <div class="product-price">
-            <span class="current-price">{{ formatPrice(product.price) }} ₽</span>
+            <!--<span class="current-price">{{ formatPrice(product.price) }} ₽</span>
             <span class="old-price" v-if="product.oldPrice">{{ formatPrice(product.oldPrice) }} ₽</span>
-            <span class="discount" v-if="product.discount">Экономия {{ formatPrice(product.oldPrice - product.price) }} ₽</span>
+            <span class="discount" v-if="product.discount">Экономия {{ formatPrice(product.oldPrice - product.price) }} ₽</span>-->
+            <span class="current-price">{{ product.price }} ₽</span>
+            <span class="old-price" v-if="product.oldPrice">{{ product.oldPrice }} ₽</span>
+            <span class="discount" v-if="product.discount">Экономия {{ product.oldPrice - product.price }} ₽</span>
           </div>
 
           <div class="product-options">
@@ -234,7 +237,8 @@
           <div v-for="product in similarProducts" :key="product.id" class="similar-card glass-panel" @click="goToProduct(product.id)">
             <img :src="product.image" :alt="product.name">
             <h4>{{ product.name }}</h4>
-            <div class="price">{{ formatPrice(product.price) }} ₽</div>
+            <div class="price">{{ product.price }} ₽</div>
+            <!--<div class="price">{{ formatPrice(product.price) }} ₽</div>-->
           </div>
         </div>
       </div>
@@ -286,9 +290,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
+const product = ref(null);
 
 // Текущее изображение
 const currentImage = ref('')
@@ -302,8 +308,37 @@ const replyText = ref('')
 const currentReviewPage = ref(1)
 const reviewsPerPage = 5
 
+const fetchProduct = async () => {
+  const slug = route.params.slug; // Получаем slug из URL
+  
+    try {
+        const response = await axios.post('/api/json.php', { 
+        type: 'get_product_by_slug', 
+        slug: slug 
+        });
+
+        // 1. Проверяем response.data
+        if (response.data && response.data.result === 'good') {
+        product.value = response.data.data; // 2. Присваиваем сам объект товара
+        
+        // 3. Важно: инициализируем зависимые данные сразу после загрузки
+        if (product.value.images && product.value.images.length > 0) {
+            currentImage.value = product.value.images[0];
+        }
+        if (product.value.colors && product.value.colors.length > 0) {
+            selectedColor.value = product.value.colors[0].name;
+        }
+        } else {
+        console.warn("Товар не найден или ошибка в БД");
+        router.push('/notfound');
+        }
+    } catch (error) {
+        console.error("Ошибка сети:", error);
+    }
+};
+
 // Данные товара
-const product = ref({
+/*const product = ref({
   id: 1,
   name: 'iPhone 15 Pro',
   category: 'Смартфоны',
@@ -336,7 +371,7 @@ const product = ref({
     'Аккумулятор': '3274 мАч',
     'ОС': 'iOS 17'
   }
-})
+})*/
 
 // Отзывы
 const reviews = ref([
@@ -426,9 +461,9 @@ const getRatingPercent = (star) => {
 }
 
 // Форматирование цены
-const formatPrice = (price) => {
+/*const formatPrice = (price) => {
   return price.toLocaleString('ru-RU')
-}
+}*/
 
 // Управление количеством
 const incrementQuantity = () => {
@@ -502,8 +537,9 @@ const goToProduct = (id) => {
 }
 
 onMounted(() => {
-  currentImage.value = product.value.images[0]
-  selectedColor.value = product.value.colors?.[0]?.name || ''
+  //currentImage.value = product.value.images[0]
+  //selectedColor.value = product.value.colors?.[0]?.name || ''
+  fetchProduct();
 })
 </script>
 
