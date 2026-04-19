@@ -342,6 +342,21 @@ switch ($action)
             return;
         }
 
+        $bad = array('?', '!', ' ', '&', '*', '$', '#', '@', '+', '`', '"', "'", '=',',','/','<','>');
+        $good = array('', '', '-', '', '', '', '', '', '', '', '', '', '','','','','');    
+
+        if(preg_match("/[А-Яа-я]/", $data['name'])) 
+        {
+            $url = slugify($data['name']);
+            $url = str_replace($bad, $good, $url);
+            $url = htmlspecialchars($url,ENT_QUOTES);
+        }
+        else
+        {
+            $url = str_replace($bad, $good, $data['name']);
+            $url = htmlspecialchars($url,ENT_QUOTES);
+        }
+
         try 
         {
             $products = R::dispense('products');
@@ -350,6 +365,7 @@ switch ($action)
             $products->category_id = htmlspecialchars($data['category'], ENT_QUOTES, 'UTF-8');
             $products->specifications = null;
             $products->img = htmlspecialchars($data['image'], ENT_QUOTES, 'UTF-8');
+            $products->url = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $products->price = htmlspecialchars($data['price'], ENT_QUOTES, 'UTF-8');
             $products->oldprice = htmlspecialchars($data['oldPrice'], ENT_QUOTES, 'UTF-8');
             $products->stock = htmlspecialchars($data['stock'], ENT_QUOTES, 'UTF-8');
@@ -359,6 +375,125 @@ switch ($action)
 
             echo json_encode(['result' => 'good']);
             return;
+            
+        } catch (Exception $e) 
+        {
+            echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+            return;
+        }
+    break 1;
+
+    case 'update-product':
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+        error_reporting(E_ALL);
+        // && !isset($data['name']) && !isset($data['category']) && !isset($data['price']) && !isset($data['stock']) && !isset($data['description']) && !isset($data['image'])
+        if(!isset($data['id']))
+        {
+            echo json_encode(['result' => 'no_id']);
+            return;
+        }
+        
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }   
+
+        if($_SESSION['logged_user']->group != 99)
+        {
+            echo json_encode(['result' => 'group']);
+            return;
+        }
+
+        try 
+        {
+            if(isset($data['id']))
+            {
+                $updated = false;
+
+                $bad = array('?', '!', ' ', '&', '*', '$', '#', '@', '+', '`', '"', "'", '=',',','/','<','>');
+                $good = array('', '', '-', '', '', '', '', '', '', '', '', '', '','','','','');    
+
+                if(isset($data['name']))
+                {
+                    R::exec('UPDATE products SET name = ? WHERE id = ?', [htmlspecialchars($data['name'], ENT_QUOTES), $data['id']]);
+
+                    if(preg_match("/[А-Яа-я]/", $data['name'])) 
+                    {
+                        $url = slugify($data['name']);
+                        $url = str_replace($bad, $good, $url);
+                        $url = htmlspecialchars($url,ENT_QUOTES);
+                    }
+                    else
+                    {
+                        $url = str_replace($bad, $good, $data['name']);
+                        $url = htmlspecialchars($url,ENT_QUOTES);
+                    }
+
+                    $url = R::exec('UPDATE products SET url = ? WHERE id = ?', [htmlspecialchars($url, ENT_QUOTES), $data['id']]);
+
+                    if($url)
+                    {
+                        $updated = true;
+                    }
+                }
+                if(isset($data['description']))
+                {
+                    R::exec('UPDATE products SET subtitle = ? WHERE id = ?', [htmlspecialchars($data['description'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['category']))
+                {
+                    R::exec('UPDATE products SET category_id = ? WHERE id = ?', [$data['category'], $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['image']) && !empty($data['image']))
+                {
+                    R::exec('UPDATE products SET img = ? WHERE id = ?', [htmlspecialchars($data['image'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['price']))
+                {
+                    R::exec('UPDATE products SET price = ? WHERE id = ?', [htmlspecialchars($data['price'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['oldPrice']))
+                {
+                    R::exec('UPDATE products SET oldprice = ? WHERE id = ?', [htmlspecialchars($data['oldPrice'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['stock']))
+                {
+                    R::exec('UPDATE products SET stock = ? WHERE id = ?', [htmlspecialchars($data['stock'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['isNew']))
+                {
+                    R::exec('UPDATE products SET isNew = ? WHERE id = ?', [htmlspecialchars($data['isNew'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if(isset($data['isPopular']))
+                {
+                    R::exec('UPDATE products SET isPopular = ? WHERE id = ?', [htmlspecialchars($data['isPopular'], ENT_QUOTES), $data['id']]);
+                    $updated = true;
+                }
+                if($updated) 
+                {
+                    echo json_encode(['result' => 'good']);
+                    return;
+                } 
+                else 
+                {
+                    echo json_encode(['result' => 'nothing']); // ничего не обновлено
+                    return;
+                }
+            }
+            else
+            {
+                echo json_encode(['result' => 'error']);
+                return;
+            }
             
         } catch (Exception $e) 
         {
@@ -384,7 +519,7 @@ switch ($action)
 
             try 
             {
-                R::exec('DELETE FROM products WHERE id = ?', [$data['id']]);
+                R::exec('DELETE FROM `products` WHERE id = ?', [$data['id']]);
                 echo json_encode(['result' => 'good']);
                 return;
                 
@@ -455,7 +590,7 @@ switch ($action)
     break 1;
 
     case 'update-category':
-        if(!isset($data['id']) || !isset($data['name']) || !isset($data['icon']))
+        if(!isset($data['id']) || !isset($data['name']))
         {
             echo json_encode(['result' => 'no_data']);
             return;
@@ -481,22 +616,42 @@ switch ($action)
 
         try 
         {
-            R::exec('UPDATE category SET name = ? and icon = ? WHERE id = ?', [htmlspecialchars($data['name'], ENT_QUOTES, 'UTF-8'), htmlspecialchars($data['icon'], ENT_QUOTES, 'UTF-8'), $data['id']]);
-            
-            echo json_encode(['result' => 'good']);
-            return;
+            $updated = false;
+
+            if(isset($data['name']))
+            {
+                R::exec('UPDATE category SET name = ? WHERE id = ?', [htmlspecialchars($data['name'], ENT_QUOTES, 'UTF-8'), $data['id']]);
+                $updated = true;
+            }
+            if(isset($data['icon']))
+            {
+                R::exec('UPDATE category SET icon = ? WHERE id = ?', [htmlspecialchars($data['icon'], ENT_QUOTES, 'UTF-8'), $data['id']]);
+                $updated = true;
+            }
+
+            if($updated)
+            {
+                echo json_encode(['result' => 'good']);
+                return;
+            }
+            else
+            {
+                echo json_encode(['result' => 'nothing']);
+                return;
+            }
             
         } catch (Exception $e) 
         {
             echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
             return;
         }
-
     break 1;
 
     case 'delete-category':
         if(isset($data['id']))
         {
+            $categories = R::find('products', 'category_id = ?', [$data['id']]);
+
             if(empty($_SESSION['logged_user']))
             {
                 echo json_encode(['result' => 'auth']);
@@ -506,6 +661,12 @@ switch ($action)
             if($_SESSION['logged_user']->group != 99)
             {
                 echo json_encode(['result' => 'group']);
+                return;
+            }
+
+            if($categories)
+            {
+                echo json_encode(['result' => 'have_category']);
                 return;
             }
 
@@ -605,6 +766,30 @@ switch ($action)
                 echo json_encode(['result' => 'not-update']);
                 return;
             }
+        }
+    break 1;
+
+    case 'get_product_by_slug':
+        
+        if(isset($data['slug']))
+        {
+            $product = R::findOne('products', 'url = ?', [$data['slug']]);
+
+            if($product)
+            {
+                echo json_encode(['result' => 'good', 'data' => $product->export()]);
+                return;
+            }
+            else
+            {
+                echo json_encode(['result' => 'bad']);
+                return;
+            }
+        }
+        else
+        {
+            echo json_encode(['result' => 'no_slug']);
+            return;
         }
     break 1;
 
