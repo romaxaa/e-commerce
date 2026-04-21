@@ -311,7 +311,7 @@ switch ($action)
 
     case 'get_products':
 
-        $products = R::getall('SELECT p.*, c.id, c.name as category_name FROM products p INNER JOIN category c ON p.category_id = c.id');
+        $products = R::getall('SELECT p.*, c.name as category_name FROM products p INNER JOIN category c ON p.category_id = c.id');
 
         echo json_encode(['result' => 'good', 'products' => $products]);
         return;
@@ -384,10 +384,6 @@ switch ($action)
     break 1;
 
     case 'update-product':
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
-        // && !isset($data['name']) && !isset($data['category']) && !isset($data['price']) && !isset($data['stock']) && !isset($data['description']) && !isset($data['image'])
         if(!isset($data['id']))
         {
             echo json_encode(['result' => 'no_id']);
@@ -408,96 +404,46 @@ switch ($action)
 
         try 
         {
-            if(isset($data['id']))
-            {
-                $updated = false;
+            $product = R::load('products', $data['id']);
 
-                $bad = array('?', '!', ' ', '&', '*', '$', '#', '@', '+', '`', '"', "'", '=',',','/','<','>');
-                $good = array('', '', '-', '', '', '', '', '', '', '', '', '', '','','','','');    
-
-                if(isset($data['name']))
-                {
-                    R::exec('UPDATE products SET name = ? WHERE id = ?', [htmlspecialchars($data['name'], ENT_QUOTES), $data['id']]);
-
-                    if(preg_match("/[А-Яа-я]/", $data['name'])) 
-                    {
-                        $url = slugify($data['name']);
-                        $url = str_replace($bad, $good, $url);
-                        $url = htmlspecialchars($url,ENT_QUOTES);
-                    }
-                    else
-                    {
-                        $url = str_replace($bad, $good, $data['name']);
-                        $url = htmlspecialchars($url,ENT_QUOTES);
-                    }
-
-                    $url = R::exec('UPDATE products SET url = ? WHERE id = ?', [htmlspecialchars($url, ENT_QUOTES), $data['id']]);
-
-                    if($url)
-                    {
-                        $updated = true;
-                    }
-                }
-                if(isset($data['description']))
-                {
-                    R::exec('UPDATE products SET subtitle = ? WHERE id = ?', [htmlspecialchars($data['description'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['category']))
-                {
-                    R::exec('UPDATE products SET category_id = ? WHERE id = ?', [$data['category'], $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['image']) && !empty($data['image']))
-                {
-                    R::exec('UPDATE products SET img = ? WHERE id = ?', [htmlspecialchars($data['image'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['price']))
-                {
-                    R::exec('UPDATE products SET price = ? WHERE id = ?', [htmlspecialchars($data['price'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['oldPrice']))
-                {
-                    R::exec('UPDATE products SET oldprice = ? WHERE id = ?', [htmlspecialchars($data['oldPrice'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['stock']))
-                {
-                    R::exec('UPDATE products SET stock = ? WHERE id = ?', [htmlspecialchars($data['stock'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['isNew']))
-                {
-                    R::exec('UPDATE products SET isNew = ? WHERE id = ?', [htmlspecialchars($data['isNew'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if(isset($data['isPopular']))
-                {
-                    R::exec('UPDATE products SET isPopular = ? WHERE id = ?', [htmlspecialchars($data['isPopular'], ENT_QUOTES), $data['id']]);
-                    $updated = true;
-                }
-                if($updated) 
-                {
-                    echo json_encode(['result' => 'good']);
-                    return;
-                } 
-                else 
-                {
-                    echo json_encode(['result' => 'nothing']); // ничего не обновлено
-                    return;
-                }
-            }
-            else
-            {
-                echo json_encode(['result' => 'error']);
+            if (!$product->id) {
+                echo json_encode(['result' => 'error', 'message' => 'Товар с таким ID не найден']);
                 return;
             }
+
+            // Обновляем поля, только если они переданы
+            if (isset($data['name'])) 
+            {
+                $product->name = htmlspecialchars($data['name'], ENT_QUOTES);
+                
+                // Логика формирования URL (слага)
+                $bad = array('?', '!', ' ', '&', '*', '$', '#', '@', '+', '`', '"', "'", '=', ',', '/', '<', '>');
+                $good = array('', '', '-', '', '', '', '', '', '', '', '', '', '', '', '', '', '');
+                
+                $url = slugify($data['name']); // Убедись, что функция slugify доступна
+                $url = str_replace($bad, $good, $url);
+                $product->url = htmlspecialchars($url, ENT_QUOTES);
+            }
+
+            if (isset($data['description'])) $product->subtitle = htmlspecialchars($data['description'], ENT_QUOTES);
+            if (isset($data['category']))    $product->category_id = $data['category'];
+            if (isset($data['image']))       $product->img = htmlspecialchars($data['image'], ENT_QUOTES);
+            if (isset($data['price']))       $product->price = $data['price'];
+            if (isset($data['oldPrice']))    $product->oldprice = $data['oldPrice'];
+            if (isset($data['stock']))       $product->stock = (int)$data['stock'];
             
-        } catch (Exception $e) 
-        {
-            echo json_encode(['result' => 'error', 'message' => 'Ошибка базы данных: ' . $e->getMessage()]);
+            // Важно для чекбоксов: приводим к 1 или 0
+            if (isset($data['isNew']))       $product->is_new = $data['isNew'] ? 1 : 0;
+            if (isset($data['isPopular']))   $product->is_popular = $data['isPopular'] ? 1 : 0;
+
+            // Сохраняем объект
+            R::store($product);
+
+            echo json_encode(['result' => 'good']);
+            return;
+
+        } catch (Exception $e) {
+            echo json_encode(['result' => 'error', 'message' => $e->getMessage()]);
             return;
         }
     break 1;
@@ -770,14 +716,16 @@ switch ($action)
     break 1;
 
     case 'get_product_by_slug':
-        
+
         if(isset($data['slug']))
         {
-            $product = R::findOne('products', 'url = ?', [$data['slug']]);
+            $product = R::getrow('SELECT p.*, c.name AS category_name FROM products p INNER JOIN category c ON p.category_id = c.id WHERE url = ?', [$data['slug']]);
 
             if($product)
             {
-                echo json_encode(['result' => 'good', 'data' => $product->export()]);
+                $specifications = json_decode($product['specifications'], true);
+
+                echo json_encode(['result' => 'good', 'data' => $product, 'specifications' => $specifications]);
                 return;
             }
             else
@@ -791,6 +739,7 @@ switch ($action)
             echo json_encode(['result' => 'no_slug']);
             return;
         }
+
     break 1;
 
     case 'logout':
