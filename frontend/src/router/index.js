@@ -8,6 +8,7 @@ import Manageproduct from '../components/admin/manage-product.vue';
 import ManageCategory from '../components/admin/manage-category.vue';
 import ProductView from '../components/product-view.vue';
 import notfound from '../components/notfound.vue';
+import about from '../components/about.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -65,6 +66,12 @@ const router = createRouter({
       component: ProductView,
       meta: {guestOnly: false},
       props: true
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: about,
+      meta: {guestOnly: false}
     }
   ]
 });

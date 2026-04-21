@@ -8,7 +8,7 @@
         <span>/</span>
         <router-link to="/catalog">Каталог</router-link>
         <span>/</span>
-        <router-link :to="`/catalog/${product.category}`">{{ product.category }}</router-link>
+        <router-link :to="`/catalog/${product.category}`">{{ product.category_name }}</router-link>
         <span>/</span>
         <span class="current">{{ product.name }}</span>
       </div>
@@ -17,7 +17,7 @@
       <div class="product-main glass-panel">
         <div class="product-gallery">
           <div class="main-image">
-            <img :src="currentImage" :alt="product.name">
+            <img :src="product.img" :alt="product.name">
             <div class="badge" v-if="product.discount">-{{ product.discount }}%</div>
             <div class="badge new" v-if="product.isNew">Новинка</div>
           </div>
@@ -45,14 +45,13 @@
             <span class="sku">Артикул: {{ product.sku }}</span>
           </div>
 
-          <div class="product-price">
-            <!--<span class="current-price">{{ formatPrice(product.price) }} ₽</span>
-            <span class="old-price" v-if="product.oldPrice">{{ formatPrice(product.oldPrice) }} ₽</span>
-            <span class="discount" v-if="product.discount">Экономия {{ formatPrice(product.oldPrice - product.price) }} ₽</span>-->
-            <span class="current-price">{{ product.price }} ₽</span>
-            <span class="old-price" v-if="product.oldPrice">{{ product.oldPrice }} ₽</span>
-            <span class="discount" v-if="product.discount">Экономия {{ product.oldPrice - product.price }} ₽</span>
-          </div>
+            <div class="product-price">
+                <span class="current-price">{{ formatPrice(product.price) }} ₽</span>
+                <span class="old-price" v-if="product.oldprice">{{ formatPrice(product.oldprice) }} ₽</span>      
+                <span class="discount" v-if="product.oldprice && product.oldprice > product.price">💰 Экономия {{ formatPrice(product.oldprice - product.price) }} ₽</span>       
+                <span class="damage" v-else-if="product.oldprice && product.oldprice < product.price">📈 Подорожание на {{ formatPrice(product.price - product.oldprice) }} ₽</span>
+                <span class="no-change" v-else-if="product.oldprice && product.oldprice === product.price">⚖️ Цена не изменилась</span>
+            </div>
 
           <div class="product-options">
             <div class="option-group" v-if="product.colors">
@@ -74,7 +73,7 @@
             <div class="option-group" v-if="product.specifications">
               <label>Характеристики:</label>
               <div class="spec-list">
-                <span v-for="spec in product.specifications" :key="spec" class="spec-tag">{{ spec }}</span>
+                <span v-for="spec in specifications" :key="spec" class="spec-tag">{{ spec }}</span>
               </div>
             </div>
           </div>
@@ -130,11 +129,11 @@
         </div>
         <div class="tab-content">
           <div v-if="activeTab === 'description'" class="description-content">
-            <p>{{ product.description }}</p>
+            <p>{{ product.subtitle }}</p>
           </div>
           <div v-if="activeTab === 'specs'" class="specs-content">
             <table class="specs-table">
-              <tr v-for="(value, key) in product.fullSpecs" :key="key">
+              <tr v-for="(value, key) in specifications" :key="key">
                 <td class="spec-name">{{ key }}</td>
                 <td class="spec-value">{{ value }}</td>
               </tr>
@@ -237,8 +236,7 @@
           <div v-for="product in similarProducts" :key="product.id" class="similar-card glass-panel" @click="goToProduct(product.id)">
             <img :src="product.image" :alt="product.name">
             <h4>{{ product.name }}</h4>
-            <div class="price">{{ product.price }} ₽</div>
-            <!--<div class="price">{{ formatPrice(product.price) }} ₽</div>-->
+            <div class="price">{{ formatPrice(product.price) }} ₽</div>
           </div>
         </div>
       </div>
@@ -258,6 +256,7 @@
                   :key="i" 
                   class="rating-star"
                   :class="{ active: i <= newReview.rating }"
+                  :value="i"
                   @click="newReview.rating = i"
                 >★</span>
               </div>
@@ -295,6 +294,7 @@ import axios from 'axios'
 const route = useRoute()
 const router = useRouter()
 const product = ref(null);
+const specifications = ref(null);
 
 // Текущее изображение
 const currentImage = ref('')
@@ -318,16 +318,20 @@ const fetchProduct = async () => {
         });
 
         // 1. Проверяем response.data
-        if (response.data && response.data.result === 'good') {
-        product.value = response.data.data; // 2. Присваиваем сам объект товара
-        
-        // 3. Важно: инициализируем зависимые данные сразу после загрузки
-        if (product.value.images && product.value.images.length > 0) {
-            currentImage.value = product.value.images[0];
-        }
-        if (product.value.colors && product.value.colors.length > 0) {
-            selectedColor.value = product.value.colors[0].name;
-        }
+        if (response.data && response.data.result === 'good') 
+        {
+            product.value = response.data.data; // 2. Присваиваем сам объект товара
+            specifications.value = response.data.specifications;
+            
+            // 3. Важно: инициализируем зависимые данные сразу после загрузки
+            if (product.value.images && product.value.images.length > 0) 
+            {
+                currentImage.value = product.value.images[0];
+            }
+            if (product.value.colors && product.value.colors.length > 0) 
+            {
+                selectedColor.value = product.value.colors[0].name;
+            }
         } else {
         console.warn("Товар не найден или ошибка в БД");
         router.push('/notfound');
@@ -461,9 +465,9 @@ const getRatingPercent = (star) => {
 }
 
 // Форматирование цены
-/*const formatPrice = (price) => {
+const formatPrice = (price) => {
   return price.toLocaleString('ru-RU')
-}*/
+}
 
 // Управление количеством
 const incrementQuantity = () => {
@@ -501,6 +505,21 @@ const submitReview = () => {
   reviews.value.unshift(newReviewObj)
   showReviewModal.value = false
   newReview.value = { rating: 5, title: '', content: '', anonymous: false }
+}
+
+const createComment = async () => {
+    const result = await authStore.createComment(newReviewObj.rating, newReviewObj.title, newReviewObj.content, newReviewObj.date);
+
+    if (result.success)  
+    {
+        alerts.show('Успешно создано!', 'success');
+        showModal.value = false;
+        await fetchProduct();
+    }
+    else
+    {
+        console.error(result.error);
+    }
 }
 
 // Лайк отзыва
@@ -711,6 +730,20 @@ onMounted(() => {
   font-size: 0.85rem;
   color: #22c55e;
   margin-top: 0.5rem;
+}
+
+.damage {
+  display: block;
+  font-size: 0.85rem;
+  color: #c52222;
+  margin-top: 0.5rem;
+}
+
+.no-change{
+    display: block;
+    font-size: 0.85rem;
+    color: #fdfdfd;
+    margin-top: 0.5rem;
 }
 
 /* Опции */

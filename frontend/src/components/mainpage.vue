@@ -94,7 +94,7 @@
 
           <div class="product-price">
             <span class="current-price">{{ formatPrice(product.price) }} ₽</span>
-            <span class="old-price">{{ formatPrice(oldPrice) }} ₽</span>
+            <span class="old-price" v-if="product.oldprice">{{ product.oldprice}} ₽</span>
           </div>
 
           <!-- Характеристики -->
@@ -109,9 +109,9 @@
             <button class="cart-btn" @click="addToCart(product)">
               🛒 В корзину
             </button>
-            <button class="quick-view-btn" @click="quickView(product)">
+            <router-link class="quick-view-btn" :to="`/product/${product.url}`">           
               👁️ Просмотр
-            </button>
+            </router-link>
           </div>
         </div>
       </div>
@@ -206,8 +206,6 @@ const loadProducts = async () => {
 onMounted(async () => {
   await loadProducts();
 });
-
-const oldPrice = products.price - 1000;
 
 const filteredProducts = computed(() => {
   // Проверяем, что products.value - массив
@@ -618,6 +616,7 @@ const resetFilters = () => {
 
 .cart-btn, .quick-view-btn {
   flex: 1;
+  text-align: center;
   padding: 0.6rem;
   border-radius: 30px;
   cursor: pointer;

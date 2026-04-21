@@ -11,3 +11,7 @@ WORKDIR /var/www
 
 # Запускаем PHP-FPM
 CMD ["php-fpm"]
+
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    && docker-php-ext-install intl

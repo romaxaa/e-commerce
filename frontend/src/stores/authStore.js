@@ -241,6 +241,11 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async createComment()
+    {
+
+    },
+
     async fetchProducts()
     {
       try
