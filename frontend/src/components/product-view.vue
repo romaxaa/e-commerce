@@ -187,7 +187,6 @@
               </div>
             </div>
             <div class="review-content">
-              <h4>{{ review.title }}</h4>
               <p>{{ review.content }}</p>
             </div>
             <div class="review-footer">
@@ -262,10 +261,6 @@
               </div>
             </div>
             <div class="form-group">
-              <label>Заголовок</label>
-              <input type="text" v-model="newReview.title" required class="glass-input">
-            </div>
-            <div class="form-group">
               <label>Отзыв</label>
               <textarea v-model="newReview.content" rows="5" required class="glass-input"></textarea>
             </div>
@@ -288,13 +283,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {  useRoute ,useRouter } from 'vue-router'
 import axios from 'axios'
+import { useAuthStore } from '../stores/authStore'
+import { useAlertStore } from '../stores/alertStore'; 
 
-const route = useRoute()
-const router = useRouter()
+const alerts = useAlertStore();
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 const product = ref(null);
 const specifications = ref(null);
+const comments = ref(null);
 
 // Текущее изображение
 const currentImage = ref('')
@@ -311,35 +311,73 @@ const reviewsPerPage = 5
 const fetchProduct = async () => {
   const slug = route.params.slug; // Получаем slug из URL
   
-    try {
-        const response = await axios.post('/api/json.php', { 
-        type: 'get_product_by_slug', 
-        slug: slug 
-        });
+  try 
+  {
+    const response = await axios.post('/api/json.php', { 
+    type: 'get_product_by_slug', 
+    slug: slug 
+    });
 
-        // 1. Проверяем response.data
-        if (response.data && response.data.result === 'good') 
-        {
-            product.value = response.data.data; // 2. Присваиваем сам объект товара
-            specifications.value = response.data.specifications;
-            
-            // 3. Важно: инициализируем зависимые данные сразу после загрузки
-            if (product.value.images && product.value.images.length > 0) 
-            {
-                currentImage.value = product.value.images[0];
-            }
-            if (product.value.colors && product.value.colors.length > 0) 
-            {
-                selectedColor.value = product.value.colors[0].name;
-            }
-        } else {
-        console.warn("Товар не найден или ошибка в БД");
-        router.push('/notfound');
-        }
-    } catch (error) {
-        console.error("Ошибка сети:", error);
+    // 1. Проверяем response.data
+    if (response.data && response.data.result === 'good') 
+    {
+      product.value = response.data.data; // 2. Присваиваем сам объект товара
+      specifications.value = response.data.specifications;
+      
+      // 3. Важно: инициализируем зависимые данные сразу после загрузки
+      if (product.value.images && product.value.images.length > 0) 
+      {
+          currentImage.value = product.value.images[0];
+      }
+      if (product.value.colors && product.value.colors.length > 0) 
+      {
+          selectedColor.value = product.value.colors[0].name;
+      }
+    } 
+    else 
+    {
+      console.warn("Товар не найден или ошибка в БД");
+      router.push('/notfound');
     }
+  } 
+  catch (error) 
+  {
+    console.error("Ошибка сети:", error);
+  }
+
+  const result = await authStore.fetchComments(product.value.id);
+
+  if (result.success)  
+  {
+    comments.value = result.data.comments;
+    console.log('Комменты успешно загружены!');
+  }
+  else
+  {
+    console.error(result.error);
+  }
+
 };
+
+/*const fetchComments = async () => {
+  if (!product.value || !product.value.id) 
+  {
+    console.log('Product еще не загружен или нет id')
+    return
+  }
+
+  const result = await authStore.fetchComments(product.value.id);
+
+  if (result.success)  
+  {
+    comments.value = result.data.comments;
+    console.log('Комменты успешно загружены!');
+  }
+  else
+  {
+    console.error(result.error);
+  }
+}*/
 
 // Данные товара
 /*const product = ref({
@@ -490,7 +528,7 @@ const toggleFavorite = () => {
 }
 
 // Отправка отзыва
-const submitReview = () => {
+const submitReview = async () => {
   const newReviewObj = {
     id: Date.now(),
     author: newReview.value.anonymous ? 'Аноним' : 'Текущий пользователь',
@@ -505,21 +543,18 @@ const submitReview = () => {
   reviews.value.unshift(newReviewObj)
   showReviewModal.value = false
   newReview.value = { rating: 5, title: '', content: '', anonymous: false }
-}
 
-const createComment = async () => {
-    const result = await authStore.createComment(newReviewObj.rating, newReviewObj.title, newReviewObj.content, newReviewObj.date);
+  const result = await authStore.createComment(product.value.id, newReviewObj.rating, newReviewObj.content);
 
-    if (result.success)  
-    {
-        alerts.show('Успешно создано!', 'success');
-        showModal.value = false;
-        await fetchProduct();
-    }
-    else
-    {
-        console.error(result.error);
-    }
+  if (result.success)  
+  {
+    alerts.show('Отзыв успешно создан!', 'success');
+    await fetchProduct();
+  }
+  else
+  {
+    console.error(result.error);
+  }
 }
 
 // Лайк отзыва
@@ -559,6 +594,8 @@ onMounted(() => {
   //currentImage.value = product.value.images[0]
   //selectedColor.value = product.value.colors?.[0]?.name || ''
   fetchProduct();
+  
+  //fetchComments();
 })
 </script>
 
