@@ -303,8 +303,8 @@ export const useAuthStore = defineStore('auth', {
         const response = await axios.post('/api/json.php', {type: 'get_products'});
         if(response.data.result === 'good')
         {
-          this.products = response.data.products;
-          return { success: true, products: this.products };
+          //this.products = response.data.products;
+          return { success: true, data: response.data.products };
         }
       }
       catch (error) 

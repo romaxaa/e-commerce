@@ -749,17 +749,24 @@ switch ($action)
             return;
         }
 
-        $comments = R::getall('SELECT r.*, u.name, u.surname, u.avatar FROM reviews r INNER JOIN users u ON r.user_id = u.id WHERE r.product_id = ?', [$data['id']]);
+        try
+        {
+            $comments = R::getall('SELECT r.*, u.name, u.surname, u.avatar FROM reviews r INNER JOIN users u ON r.user_id = u.id WHERE r.product_id = ?', [$data['id']]);
 
-        if($comments)
-        {
-            echo json_encode(['result' => 'good', 'comments' => $comments]);
-            return;
+            if($comments)
+            {
+                echo json_encode(['result' => 'good', 'comments' => $comments]);
+                return;
+            }
+            else
+            {
+                echo json_encode(['result' => 'no_comments']);
+                return;
+            }
         }
-        else
+        catch(Exception $e)
         {
-            echo json_encode(['result' => 'bad']);
-            return;
+            echo 'Caught exception: ',  $e->getMessage(), "\n";
         }
     break 1;
 

@@ -54,18 +54,18 @@
             </div>
 
           <div class="product-options">
-            <div class="option-group" v-if="product.colors">
+            <div class="option-group" v-if="specifications.colors">
               <label>Цвет:</label>
               <div class="color-options">
                 <button 
-                  v-for="color in product.colors" 
+                  v-for="color in specifications.colors" 
                   :key="color.name"
                   class="color-btn"
                   :style="{ background: color.code }"
                   :class="{ active: selectedColor === color.name }"
                   @click="selectedColor = color.name"
                 >
-                  <span v-if="color.code === '#fff' || color.code === '#ffffff'" style="color: #000;">{{ color.name }}</span>
+                  <span v-if="color.code === '#fff' || color.code === '#ffffff'" style="color: #000;"></span>
                 </button>
               </div>
             </div>
@@ -73,7 +73,7 @@
             <div class="option-group" v-if="product.specifications">
               <label>Характеристики:</label>
               <div class="spec-list">
-                <span v-for="spec in specifications" :key="spec" class="spec-tag">{{ spec }}</span>
+                <span v-for="spec in specifications.specifications" :key="spec" class="spec-tag">{{ spec }}</span>
               </div>
             </div>
           </div>
@@ -133,7 +133,7 @@
           </div>
           <div v-if="activeTab === 'specs'" class="specs-content">
             <table class="specs-table">
-              <tr v-for="(value, key) in specifications" :key="key">
+              <tr v-for="(value, key) in specifications.fullSpecs" :key="key">
                 <td class="spec-name">{{ key }}</td>
                 <td class="spec-value">{{ value }}</td>
               </tr>
@@ -173,25 +173,25 @@
 
         <!-- Список отзывов -->
         <div class="reviews-list">
-          <div v-for="review in reviews" :key="review.id" class="review-card">
+          <div v-for="comment in comments" :key="comment.id" :value="comment.id" class="review-card">
             <div class="review-header">
               <div class="reviewer-info">
-                <img :src="review.avatar" :alt="review.author" class="reviewer-avatar">
+                <img :src="comment.img" :alt="comment.name" class="reviewer-avatar">
                 <div class="reviewer-details">
-                  <span class="reviewer-name">{{ review.author }}</span>
-                  <span class="review-date">{{ review.date }}</span>
+                  <span class="reviewer-name">{{ comment.name }} {{ comment.surname }}</span>
+                  <span class="review-date">{{ formatDateTime(comment.created_at) }}</span>
                 </div>
               </div>
               <div class="review-rating">
-                <span v-for="i in 5" :key="i" class="star small" :class="{ active: i <= review.rating }">★</span>
+                <span v-for="i in 5" :key="i" class="star small" :class="{ active: i <= comment.grade }">★</span>
               </div>
             </div>
             <div class="review-content">
-              <p>{{ review.content }}</p>
+              <p>{{ comment.comment }}</p>
             </div>
             <div class="review-footer">
               <button class="like-btn" @click="likeReview(review.id)">
-                👍 {{ review.likes }}
+                👍 {{ comment.likes ?? 0 }}
               </button>
               <button class="reply-btn" @click="showReplyForm(review.id)">
                 💬 Ответить
@@ -199,7 +199,7 @@
             </div>
             
             <!-- Ответы на отзыв -->
-            <div v-if="review.replies && review.replies.length" class="replies-list">
+            <!--<div v-if="review.replies && review.replies.length" class="replies-list">
               <div v-for="reply in review.replies" :key="reply.id" class="reply-card">
                 <div class="reply-header">
                   <span class="reply-author">{{ reply.author }}</span>
@@ -207,10 +207,10 @@
                 </div>
                 <p class="reply-content">{{ reply.content }}</p>
               </div>
-            </div>
+            </div>-->
 
             <!-- Форма ответа -->
-            <div v-if="replyFormId === review.id" class="reply-form">
+            <div v-if="replyFormId === comment.id" class="reply-form">
               <textarea v-model="replyText" placeholder="Ваш ответ..." rows="2" class="glass-input"></textarea>
               <div class="reply-actions">
                 <button class="cancel-btn" @click="replyFormId = null">Отмена</button>
@@ -282,11 +282,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import {  useRoute ,useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore'
-import { useAlertStore } from '../stores/alertStore'; 
+import { useAlertStore } from '../stores/alertStore';
+
 
 const alerts = useAlertStore();
 const route = useRoute();
@@ -308,6 +309,12 @@ const replyText = ref('')
 const currentReviewPage = ref(1)
 const reviewsPerPage = 5
 
+const formatDateTime = (date) => {
+  if (!date) return '—'
+  const d = new Date(date)
+  return d.toLocaleString('ru-RU')
+}
+
 const fetchProduct = async () => {
   const slug = route.params.slug; // Получаем slug из URL
   
@@ -327,12 +334,14 @@ const fetchProduct = async () => {
       // 3. Важно: инициализируем зависимые данные сразу после загрузки
       if (product.value.images && product.value.images.length > 0) 
       {
-          currentImage.value = product.value.images[0];
+        currentImage.value = product.value.images[0];
       }
       if (product.value.colors && product.value.colors.length > 0) 
       {
-          selectedColor.value = product.value.colors[0].name;
+        selectedColor.value = product.value.colors[0].name;
       }
+
+      await loadComments();
     } 
     else 
     {
@@ -344,40 +353,38 @@ const fetchProduct = async () => {
   {
     console.error("Ошибка сети:", error);
   }
-
-  const result = await authStore.fetchComments(product.value.id);
-
-  if (result.success)  
-  {
-    comments.value = result.data.comments;
-    console.log('Комменты успешно загружены!');
-  }
-  else
-  {
-    console.error(result.error);
-  }
-
 };
 
-/*const fetchComments = async () => {
-  if (!product.value || !product.value.id) 
+const loadComments = async () => {
+  try
   {
-    console.log('Product еще не загружен или нет id')
-    return
+    if (!product.value || !product.value.id)
+    {
+      console.warn('Нет ID товара, комментарии не загружены');
+      return;
+    }
+    
+    const result = await authStore.fetchComments(product.value.id);
+    
+    if (result.success) 
+    {
+      comments.value = result.data.comments;
+      console.log('Комменты успешно загружены!');
+    } 
   }
+  catch (error) 
+  {
+    console.dir(error); 
 
-  const result = await authStore.fetchComments(product.value.id);
-
-  if (result.success)  
-  {
-    comments.value = result.data.comments;
-    console.log('Комменты успешно загружены!');
+    if (error.response) 
+    {
+      console.error('Данные ответа:', error.response.data);
+    } else 
+    {
+      console.error('Текст ошибки:', error.message);
+    }
   }
-  else
-  {
-    console.error(result.error);
-  }
-}*/
+}
 
 // Данные товара
 /*const product = ref({
@@ -594,8 +601,6 @@ onMounted(() => {
   //currentImage.value = product.value.images[0]
   //selectedColor.value = product.value.colors?.[0]?.name || ''
   fetchProduct();
-  
-  //fetchComments();
 })
 </script>
 
@@ -1119,6 +1124,7 @@ onMounted(() => {
 .review-date {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.5);
+  padding-left: 15px;
 }
 
 .review-rating .star {
