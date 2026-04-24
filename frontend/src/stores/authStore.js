@@ -241,9 +241,59 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async createComment()
+    async fetchComments(id)
     {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'fetch-comments',
+          id: id
+        });
 
+        if(response.data.result === 'good')
+        {
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch(error)
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      }
+    },
+
+    async createComment(product_id, rating, content, date)
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'create-comment',
+          product_id: product_id,
+          rating: rating,
+          content: content
+        });
+
+        if(response.data.result === 'good')
+        {
+          console.log('good!');
+          return { success: true, data: response.data };
+        }
+        else 
+        {
+          this.error = response.data.message;
+          return { success: false, error: this.error };
+        }
+      }
+      catch(error)
+      {
+        this.error = error.response?.data?.message || 'Ошибка соединения';
+        return { success: false, error: this.error };
+      }
     },
 
     async fetchProducts()

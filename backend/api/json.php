@@ -742,6 +742,68 @@ switch ($action)
 
     break 1;
 
+    case 'fetch-comments':
+        if(!isset($data['id']))
+        {
+            echo json_encode(['result' => 'empty_id']);
+            return;
+        }
+
+        $comments = R::getall('SELECT r.*, u.name, u.surname, u.avatar FROM reviews r INNER JOIN users u ON r.user_id = u.id WHERE r.product_id = ?', [$data['id']]);
+
+        if($comments)
+        {
+            echo json_encode(['result' => 'good', 'comments' => $comments]);
+            return;
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad']);
+            return;
+        }
+    break 1;
+
+    case 'create-comment':
+        if(!isset($data['product_id']))
+        {
+            echo json_encode(['result' => 'no_id']);
+            return;
+        }
+        if(!isset($data['rating']))
+        {
+            echo json_encode(['result' => 'no_rating']);
+            return;
+        }
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+
+        $comment = R::dispense('reviews');
+        $comment->product_id = htmlspecialchars($data['product_id'], ENT_QUOTES);
+        $comment->user_id = $_SESSION['logged_user']->id;
+        if(isset($data['content']))
+        {
+            $comment->comment = htmlspecialchars($data['content'], ENT_QUOTES);
+        }
+        $comment->grade = htmlspecialchars($data['rating'], ENT_QUOTES);
+        $comment->created_at = date("Y-m-d H:i:s");
+        $id = R::store($comment);
+
+        if($comment)
+        {
+            echo json_encode(['result' => 'good']);
+            return;
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad']);
+            return;
+        }
+
+    break 1;
+
     case 'logout':
         if(isset($_SESSION['logged_user']))
         {
