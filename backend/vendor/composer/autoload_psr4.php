@@ -6,5 +6,15 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Symfony\\Polyfill\\Php81\\' => array($vendorDir . '/symfony/polyfill-php81'),
+    'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-factory/src', $vendorDir . '/psr/http-message/src'),
+    'Psr\\Http\\Client\\' => array($vendorDir . '/psr/http-client/src'),
     'Namshi\\JOSE\\' => array($vendorDir . '/namshi/jose/src/Namshi/JOSE'),
+    'Meilisearch\\' => array($vendorDir . '/meilisearch/meilisearch-php/src'),
+    'MeiliSearch\\' => array($vendorDir . '/meilisearch/meilisearch-php/src'),
+    'Http\\Factory\\Guzzle\\' => array($vendorDir . '/http-interop/http-factory-guzzle/src'),
+    'Http\\Discovery\\' => array($vendorDir . '/php-http/discovery/src'),
+    'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
+    'GuzzleHttp\\Promise\\' => array($vendorDir . '/guzzlehttp/promises/src'),
+    'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
 );

@@ -641,11 +641,11 @@ switch ($action)
             return;
         }
 
-        $currentUser = R::load('users', $_SESSION['logged_user']->id);
+        $currentUser = R::load('users', $data['id']);
 
 
 
-        if(isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
+        if(isset($data['id']) && isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
         {
             if(R::count('users', "username = ? AND id != ?", [$data['username'], $currentUser->id]) > 0)
             {
@@ -668,37 +668,37 @@ switch ($action)
 
             if(!empty($data['username']))
             {
-                R::exec('UPDATE users SET username = ? WHERE id = ?', htmlspecialchars($data['username'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET username = ? WHERE id = ?', htmlspecialchars($data['username'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
             if(!empty($data['name']))
             {
-                R::exec('UPDATE users SET name = ? WHERE id = ?', htmlspecialchars($data['name'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET name = ? WHERE id = ?', htmlspecialchars($data['name'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
             if(!empty($data['surname']))
             {
-                R::exec('UPDATE users SET surname = ? WHERE id = ?', htmlspecialchars($data['surname'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET surname = ? WHERE id = ?', htmlspecialchars($data['surname'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
             if(!empty($data['email']))
             {
-                R::exec('UPDATE users SET email = ? WHERE id = ?', htmlspecialchars($data['email'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET email = ? WHERE id = ?', htmlspecialchars($data['email'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
             if(!empty($data['phone']))
             {
-                R::exec('UPDATE users SET phone = ? WHERE id = ?', htmlspecialchars($data['phone'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET phone = ? WHERE id = ?', htmlspecialchars($data['phone'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
             if(!empty($data['birthday']))
             {
-                R::exec('UPDATE users SET birthday = ? WHERE id = ?', htmlspecialchars($data['birthday'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET birthday = ? WHERE id = ?', htmlspecialchars($data['birthday'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
             if(!empty($data['bio']))
             {
-                R::exec('UPDATE users SET bio = ? WHERE id = ?', htmlspecialchars($data['bio'], ENT_QUOTES), $_SESSION['logged_user']->id);
+                R::exec('UPDATE users SET bio = ? WHERE id = ?', htmlspecialchars($data['bio'], ENT_QUOTES), $data['id']);
                 $updated = true;
             }
 
@@ -710,6 +710,54 @@ switch ($action)
             else
             {
                 echo json_encode(['result' => 'not-update']);
+                return;
+            }
+        }
+    break 1;
+
+    case 'save-adress':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+
+        if(!isset($data['id']))
+        {
+            echo json_encode(['result' => 'no_id']);
+            return;
+        }
+
+        if(isset($data['id']) && isset($data['type']) && isset($data['street']) && isset($data['city']) && isset($data['postalCode']) && isset($data['office']) && isset($data['isDefault']))
+        {
+            $region = R::getrow('SELECT region_id FROM geo_city WHERE id = ?', [$data['city']]);
+
+            if(!$region)
+            {
+                echo json_encode(['result' => 'no_region']);
+                return;
+            }
+
+            $regionId = $region['region_id'];
+
+            $adress = R::dispense('user_adresses');
+            $adress->user_id = htmlspecialchars($data['id'], ENT_QUOTES);
+            $adress->region = htmlspecialchars($regionId, ENT_QUOTES);
+            $adress->city = htmlspecialchars($data['city'], ENT_QUOTES);
+            $adress->city_index = htmlspecialchars($data['postalCode'], ENT_QUOTES);
+            $adress->street = htmlspecialchars($data['street'], ENT_QUOTES);
+            $adress->office = htmlspecialchars($data['office'], ENT_QUOTES);
+            $adress->status = htmlspecialchars($data['type'], ENT_QUOTES);
+            $id = R::store($adress);
+
+            if($adress)
+            {
+                echo json_encode(['result' => 'good']);
+                return;
+            }
+            else
+            {
+                echo json_encode(['result' => 'bad']);
                 return;
             }
         }
@@ -768,6 +816,29 @@ switch ($action)
         {
             echo 'Caught exception: ',  $e->getMessage(), "\n";
         }
+    break 1;
+
+    case 'fetch_cityes':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+        
+        $cities = R::getall('SELECT * FROM geo_city');
+        $regions = R::getall('SELECT * FROM geo_regions');
+
+        if($cities && $regions)
+        {
+            echo json_encode(['result' => 'good', 'cities' => $cities, 'regions' => $regions]);
+            return;
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad']);
+            return;
+        }
+        
     break 1;
 
     case 'create-comment':
