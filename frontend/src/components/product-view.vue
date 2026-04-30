@@ -39,9 +39,9 @@
           
           <div class="product-rating">
             <div class="stars">
-              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= product.rating }">★</span>
+              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= product.grade }">★</span>
             </div>
-            <span class="reviews-count">{{ product.reviews }} отзывов</span>
+            <span class="reviews-count">{{ product.grade }} отзывов</span>
             <span class="sku">Артикул: {{ product.sku }}</span>
           </div>
 
@@ -154,11 +154,11 @@
         <!-- Статистика отзывов -->
         <div class="reviews-stats">
           <div class="rating-summary">
-            <div class="average-rating">{{ product.rating }}</div>
+            <div class="average-rating">{{ product.grade }}</div>
             <div class="stars-big">
-              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= Math.floor(product.rating) }">★</span>
+              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= Math.floor(product.grade) }">★</span>
             </div>
-            <div class="total-reviews">{{ reviews.length }} отзывов</div>
+            <div class="total-reviews">{{  }} отзывов</div>
           </div>
           <div class="rating-bars">
             <div v-for="star in [5,4,3,2,1]" :key="star" class="rating-bar-item">

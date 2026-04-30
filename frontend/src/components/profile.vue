@@ -273,14 +273,17 @@
           <h3>{{ editingAddress ? 'Редактировать адрес' : 'Новый адрес' }}</h3>
           <form @submit.prevent="saveAddress" class="address-form">
             <select v-model="addressForm.type" class="glass-input">
-              <option value="Дом">Дом</option>
+              <option value="">Тип</option>
               <option value="Работа">Работа</option>
+              <option value="Дом">Дом</option>
               <option value="Другой">Другой</option>
             </select>
+            <select v-model="addressForm.city" class="glass-input">
+              <option v-for="city in cities" :value="city.id">{{ city.name }}</option>
+            </select>
             <input type="text" v-model="addressForm.street" placeholder="Улица, дом" class="glass-input">
-            <input type="text" v-model="addressForm.city" placeholder="Город" class="glass-input">
+            <input type="text" v-model="addressForm.office" placeholder="Квартира, офис" class="glass-input">
             <input type="text" v-model="addressForm.postalCode" placeholder="Индекс" class="glass-input">
-            <input type="tel" v-model="addressForm.phone" placeholder="Телефон" class="glass-input">
             <label class="checkbox-label">
               <input type="checkbox" v-model="addressForm.isDefault">
               <span>Сделать адресом по умолчанию</span>
@@ -332,29 +335,52 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import { useAuthStore } from '../stores/authStore';
 
 const authStore = useAuthStore();
-const router = useRouter()
+const router = useRouter();
 
-onMounted(async () => 
-{
-    // Если данных в сторе еще нет, загружаем их один раз
-    if (!authStore.user) 
-    {
-      await authStore.checkAuth();
-    }
-
-    // Если после проверки пользователя всё еще нет — на выход
-    if (!authStore.user)
-    {
-      router.push("/login");
-    }
-});
+const cities = ref(null);
+const regions = ref(null);
 
 // Активная вкладка
 const activeTab = ref('profile')
+
+const fetchCityies = async () => {
+  const result = await authStore.fetchCityies();
+
+  if (result.success) 
+  {
+    cities.value = result.cities;
+    regions.value = result.regions;
+  } 
+  else 
+  {
+    console.error('Ошибка загрузки:', result.error);
+  }
+};
+
+const updateProfile = async () => {
+  const result = await authStore.update_user_info(authStore.user.id, profileForm.name, profileForm.surname, profileForm.email, profileForm.phone, profileForm.birthday, profileForm.bio);
+
+  if(!result.success)
+  {
+      console.log(result.error);
+  }
+}
+
+const saveAddress = async () => {
+  const result = await authStore.saveAddress(authStore.user.id, addressForm.type, addressForm.street, addressForm.city, addressForm.postalCode, addressForm.office, addressForm.isDefault);
+
+  if(result.success)
+  {
+    console.log('good');
+  }
+  else
+  {
+    console.log(result.error);
+  }
+}
 
 // Табы навигации
 const tabs = ref([
@@ -438,7 +464,6 @@ const addressForm = reactive({
   street: '',
   city: '',
   postalCode: '',
-  phone: '',
   isDefault: false
 })
 
@@ -469,15 +494,6 @@ const profileForm = reactive({
     avatar: authStore.user?.avatar
 })
 
-const updateProfile = async () => {
-    const result = await authStore.update_user_info(profileForm.name, profileForm.surname, profileForm.email, profileForm.phone, profileForm.birthday, profileForm.bio);
-
-    if(!result.success)
-    {
-        console.log(result.error);
-    }
-}
-
 // Загрузка аватара
 const uploadAvatar = (event) => {
   const file = event.target.files[0]
@@ -491,7 +507,7 @@ const uploadAvatar = (event) => {
 }
 
 // Сохранение адреса
-const saveAddress = () => {
+/*const saveAddress = () => {
   if (editingAddress.value) {
     // Редактирование
     const index = addresses.value.findIndex(a => a.id === editingAddress.value.id)
@@ -530,7 +546,7 @@ const editAddress = (address) => {
 // Удаление адреса
 const deleteAddress = (id) => {
   addresses.value = addresses.value.filter(a => a.id !== id)
-}
+}*/
 
 // Установка адреса по умолчанию
 const setDefaultAddress = (id) => {
@@ -546,6 +562,7 @@ const resetAddressForm = () => {
   addressForm.city = ''
   addressForm.postalCode = ''
   addressForm.phone = ''
+  addressForm.office = ''
   addressForm.isDefault = false
   editingAddress.value = null
 }
@@ -586,6 +603,23 @@ const repeatOrder = (order) => {
   console.log('Повторить заказ:', order)
   router.push('/catalog')
 }
+
+onMounted(async () => 
+{
+    // Если данных в сторе еще нет, загружаем их один раз
+    if (!authStore.user) 
+    {
+      await authStore.checkAuth();
+    }
+
+    // Если после проверки пользователя всё еще нет — на выход
+    if (!authStore.user)
+    {
+      router.push("/login");
+    }
+
+    fetchCityies();
+});
 </script>
 
 <style scoped>

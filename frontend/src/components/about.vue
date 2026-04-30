@@ -252,6 +252,17 @@ const team = ref([
       linkedin: '#',
       github: '#'
     }
+  },
+  {
+    id: 5,
+    name: 'Елена Волкова',
+    role: 'Руководитель отдела продаж',
+    bio: 'Профессионал в области клиентского сервиса',
+    avatar: 'https://i.pravatar.cc/150?img=4',
+    social: {
+      linkedin: '#',
+      github: '#'
+    }
   }
 ])
 
@@ -298,6 +309,7 @@ const partners = ref([
   { name: 'Sony', icon: '🎮' },
   { name: 'Xiaomi', icon: '📷' },
   { name: 'Google', icon: '🔍' },
+  { name: 'Microsoft', icon: '💻' },
   { name: 'Microsoft', icon: '💻' }
 ])
 
@@ -644,7 +656,6 @@ onMounted(() => {
 .map-container {
   border-radius: 32px;
   overflow: hidden;
-  height: 400px;
 }
 
 .map-fallback {

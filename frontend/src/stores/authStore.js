@@ -296,6 +296,60 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async searchProducts(string)
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'search-product',
+        query: string
+      });
+
+      if(response.data.result === "good")
+      {
+        return {success: true, data: response.data.data};
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+    },
+
+    async fetchCityies()
+    {
+      const response = await axios.post('/api/json.php', {type: 'fetch_cityes'});
+
+      if(response.data.result === "good")
+      {
+        return { success: true, cities: response.data.cities, regions: response.data.regions };
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+    },
+
+    async saveAddress(id, type, street, city, postalCode, office, isDefault)
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'save-adress',
+        id: id,
+        type: type,
+        street: street,
+        city: city,
+        postalCode: postalCode,
+        office: office,
+        isDefault: isDefault
+      });
+
+      if(response.data.result === "good")
+      {
+        return { success: true };
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+    },
+
     async fetchProducts()
     {
       try
@@ -304,7 +358,7 @@ export const useAuthStore = defineStore('auth', {
         if(response.data.result === 'good')
         {
           //this.products = response.data.products;
-          return { success: true, data: response.data.products };
+          return { success: true, data: response.data.data, count: response.data.count };
         }
       }
       catch (error) 
@@ -453,57 +507,34 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async update_user_info(name, surname, email, phone, birthday, bio)
+    async update_user_info(id, name, surname, email, phone, birthday, bio)
     {
-      try
-      {
-        const response = await axios.post('/api/json.php', 
-          {
-              type: 'update-user-info',
-              name: name,
-              surname: surname,
-              email: email,
-              phone: phone,
-              birthday: birthday,
-              bio: bio
-          }
-        );
 
-        if(response.data.result === 'good')
+      const response = await axios.post('/api/json.php', 
         {
-          return { success: true, categories: this.categories };
+            type: 'update-user-info',
+            id: id,
+            name: name,
+            surname: surname,
+            email: email,
+            phone: phone,
+            birthday: birthday,
+            bio: bio
         }
-        else
-        {
-          // Если сервер вернул ошибку
-          const errorMessage = response.data.message || 'Ошибка обновления профиля';
-          this.error = errorMessage;
-          return { success: false, error: errorMessage };
-        }
-      }
-      catch(error)
+      );
+
+      if(response.data.result === 'good')
       {
-        // Обработка ошибок сети/сервера
-        let errorMessage = 'Произошла ошибка при обновлении профиля';
-        
-        if (error.response) {
-          // Сервер ответил с ошибкой
-          errorMessage = error.response.data?.message || `Ошибка ${error.response.status}`;
-        } else if (error.request) {
-          // Запрос был отправлен, но ответ не получен
-          errorMessage = 'Нет соединения с сервером';
-        } else {
-          // Ошибка при настройке запроса
-          errorMessage = error.message;
-        }
-        
+        return { success: true };
+      }
+      else
+      {
+        // Если сервер вернул ошибку
+        const errorMessage = response.data.message || 'Ошибка обновления профиля';
         this.error = errorMessage;
         return { success: false, error: errorMessage };
       }
-      finally
-      {
-        this.isLoaded = true;
-      }
+      
     },
 
     async logout() 

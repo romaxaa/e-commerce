@@ -1,11 +1,10 @@
-<!-- Catalog.vue - Страница каталога с поиском MeiliSearch -->
 <template>
   <div class="catalog-page">
     <div class="catalog-container">
       <!-- Hero секция с поиском -->
       <section class="catalog-hero glass-panel">
         <h1>Каталог товаров</h1>
-        <p>{{ totalProducts }} товаров в нашем ассортименте</p>
+        <p>{{ count }} товаров в нашем ассортименте</p>
         
         <!-- Глобальный поиск -->
         <div class="global-search">
@@ -13,7 +12,6 @@
             <input 
               type="text" 
               v-model="searchQuery" 
-              @input="handleSearch"
               placeholder="Поиск товаров по названию, категории, бренду..."
               class="search-input glass-input"
               autocomplete="off"
@@ -21,25 +19,6 @@
             <button class="search-btn" @click="handleSearch">
               🔍 Найти
             </button>
-            <button v-if="searchQuery" class="clear-btn" @click="clearSearch">
-              ✕
-            </button>
-          </div>
-          
-          <!-- Результаты поиска (подсказки) -->
-          <div v-if="searchSuggestions.length && searchQuery" class="search-suggestions glass-panel">
-            <div 
-              v-for="suggestion in searchSuggestions" 
-              :key="suggestion.id"
-              class="suggestion-item"
-              @click="selectSuggestion(suggestion)"
-            >
-              <img :src="suggestion.image" :alt="suggestion.name" class="suggestion-img">
-              <div class="suggestion-info">
-                <span class="suggestion-name">{{ highlightMatch(suggestion.name, searchQuery) }}</span>
-                <span class="suggestion-price">{{ formatPrice(suggestion.price) }} ₽</span>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -62,7 +41,7 @@
             <div v-show="openFilters.category" class="filter-options">
               <label v-for="cat in categories" :key="cat.name" class="filter-checkbox">
                 <input type="checkbox" :value="cat.name" v-model="filters.categories">
-                <span>{{ cat.name }} ({{ cat.count }})</span>
+                <span>{{ cat.name }}</span>
               </label>
             </div>
           </div>
@@ -141,10 +120,10 @@
           <!-- Сортировка -->
           <div class="sorting-bar glass-panel">
             <div class="sorting-left">
-              <span>Найдено: {{ filteredProducts.length }} товаров</span>
-              <span class="active-filters" v-if="activeFiltersCount">
+              <span>Найдено: {{ count }} товаров</span>
+              <!--<span class="active-filters" v-if="activeFiltersCount">
                 • {{ activeFiltersCount }} фильтра
-              </span>
+              </span>-->
             </div>
             <div class="sorting-right">
               <label>Сортировать:</label>
@@ -163,18 +142,18 @@
           </div>
 
           <!-- Сетка товаров -->
-          <div v-if="paginatedProducts.length" class="products-grid" :class="{ 'list-view': viewMode === 'list' }">
+          <div v-if="displayedProducts" class="products-grid" :class="{ 'list-view': viewMode === 'list' }">
             <div 
-              v-for="product in paginatedProducts" 
+              v-for="product in displayedProducts" 
               :key="product.id" 
               class="product-card glass-panel"
-              @click="goToProduct(product.id)"
+              @click="goToProduct(product.url)"
             >
               <div class="product-image">
                 <img :src="product.img" :alt="product.name">
                 <div class="product-badges">
                   <span v-if="product.isNew" class="badge new">NEW</span>
-                  <span v-if="product.discount" class="badge discount">-{{ product.discount }}%</span>
+                  <span v-if="product.discount" class="badge discount">-10%</span>
                 </div>
                 <button class="favorite-btn" @click.stop="toggleFavorite(product.id)">
                   {{ product.isFavorite ? '❤️' : '🤍' }}
@@ -187,9 +166,10 @@
                 
                 <div class="product-rating">
                   <span class="stars">
-                    <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= product.rating }">★</span>
+                    <!--<span v-for="i in 5" :key="i" class="star" :class="{ active: i <= product.rating }">★</span>-->
+                    <span>★</span>
                   </span>
-                  <span class="reviews">({{ product.reviews }})</span>
+                  <span class="reviews">(234)</span>
                 </div>
                 
                 <div class="product-price">
@@ -205,7 +185,7 @@
                   <button class="cart-btn" @click.stop="addToCart(product)">
                     🛒 В корзину
                   </button>
-                  <button class="quick-view-btn" @click.stop="">
+                  <button class="quick-view-btn" @click.stop="" @click="goToProduct(product.url)">
                     👁️
                   </button>
                 </div>
@@ -222,7 +202,7 @@
           </div>
 
           <!-- Пагинация -->
-          <div v-if="totalPages > 1" class="pagination">
+          <!--<div v-if="totalPages > 1" class="pagination">
             <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">←</button>
             <div class="page-numbers">
               <button 
@@ -236,7 +216,7 @@
               </button>
             </div>
             <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">→</button>
-          </div>
+          </div>-->
         </main>
       </div>
     </div>
@@ -254,6 +234,14 @@ const route = useRoute()
 const router = useRouter()
 
 const products = ref([]);
+const count = ref(null);
+const categories = ref([]);
+const searchResult = ref([]);     // Сюда пишем результат поиска
+const isSearching = ref(false);
+
+const displayedProducts = computed(() => {
+  return isSearching.value ? searchResult.value : products.value
+});
 
 // Состояние
 const searchQuery = ref('')
@@ -282,16 +270,6 @@ const openFilters = ref({
   stock: false
 })
 
-// Данные для фильтров
-const categories = ref([
-  { name: 'Смартфоны', count: 156 },
-  { name: 'Ноутбуки', count: 89 },
-  { name: 'Наушники', count: 123 },
-  { name: 'Часы', count: 67 },
-  { name: 'Камеры', count: 45 },
-  { name: 'Аксессуары', count: 234 }
-])
-
 const brands = ref([
   { name: 'Apple', count: 89 },
   { name: 'Samsung', count: 67 },
@@ -313,7 +291,8 @@ const fetchProduct = async () => {
     if (result.success) 
     {
       products.value = result.data;
-      console.log(products.value);
+      count.value = result.count;
+      console.log(count.value);
     } 
     else 
     {
@@ -325,6 +304,35 @@ const fetchProduct = async () => {
     console.error("Ошибка сети:", error);
   }
 };
+
+const fetchCategories = async() => {
+  const result = await authStore.fetchCategories();
+  if (result.success) 
+  {
+    categories.value = result.categories;
+    console.log(categories.value);
+  } 
+  else 
+  {
+    console.warn("error");
+  }
+};
+
+const handleSearch = async () => {
+  if (searchQuery.value.length > 1) 
+  {
+    isSearching.value = true;
+    // Можно прокинуть сюда и фильтры, если нужно
+    const result = await authStore.searchProducts(searchQuery.value);
+    if(result.success)
+    {
+      searchResult.value = result.data;
+    }
+  } else {
+    isSearching.value = false;
+    searchResult.value = []; // Или верни исходный список товаров
+  }
+}
 
 // Товары (моковые данные)
 /*const products = ref([
@@ -458,91 +466,18 @@ const fetchProduct = async () => {
   }
 ])*/
 
-// Количество активных фильтров
-const activeFiltersCount = computed(() => {
-  let count = 0
-  if (filters.value.categories.length) count++
-  if (filters.value.brands.length) count++
-  if (filters.value.priceMin > minPrice.value || filters.value.priceMax < maxPrice.value) count++
-  if (filters.value.rating) count++
-  if (filters.value.inStock) count++
-  if (searchQuery.value) count++
-  return count
-})
-
-// Фильтрация товаров
-const filteredProducts = computed(() => {
-  let result = [...products.value]
-
-  // Поиск
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(p => 
-      p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query) ||
-      p.brand.toLowerCase().includes(query)
-    )
-  }
-
-  // Фильтр по категориям
-  if (filters.value.categories.length) {
-    result = result.filter(p => filters.value.categories.includes(p.category))
-  }
-
-  // Фильтр по брендам
-  if (filters.value.brands.length) {
-    result = result.filter(p => filters.value.brands.includes(p.brand))
-  }
-
-  // Фильтр по цене
-  result = result.filter(p => 
-    p.price >= (filters.value.priceMin || minPrice.value) && 
-    p.price <= (filters.value.priceMax || maxPrice.value)
-  )
-
-  // Фильтр по рейтингу
-  if (filters.value.rating) {
-    result = result.filter(p => p.rating >= filters.value.rating)
-  }
-
-  // Фильтр по наличию
-  if (filters.value.inStock) {
-    result = result.filter(p => p.stock > 0)
-  }
-
-  // Сортировка
-  switch (sortBy.value) {
-    case 'price_asc':
-      result.sort((a, b) => a.price - b.price)
-      break
-    case 'price_desc':
-      result.sort((a, b) => b.price - a.price)
-      break
-    case 'rating':
-      result.sort((a, b) => b.rating - a.rating)
-      break
-    case 'newest':
-      result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0))
-      break
-  }
-
-  return result
-})
-
-// Общее количество товаров
-const totalProducts = computed(() => filteredProducts.value.length)
-
-// Пагинация
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / productsPerPage))
-
-const paginatedProducts = computed(() => {
+/*const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * productsPerPage
   const end = start + productsPerPage
   return filteredProducts.value.slice(start, end)
-})
+})*/
+
+/*const paginatedProducts = computed(() => {
+  return displayedProducts.value 
+})*/
 
 // Видимые страницы для пагинации
-const visiblePages = computed(() => {
+/*const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
   let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
@@ -556,38 +491,23 @@ const visiblePages = computed(() => {
     pages.push(i)
   }
   return pages
-})
+})*/
 
-// Поиск с подсказками
-const handleSearch = async () => {
-  currentPage.value = 1
-  
-  if (searchQuery.value.length > 1) {
-    // Здесь будет запрос к MeiliSearch
-    // Пока имитация
-    searchSuggestions.value = product.value
-      .filter(p => p.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
-      .slice(0, 5)
-  } else {
-    searchSuggestions.value = []
-  }
-}
-
-const clearSearch = () => {
+/*const clearSearch = () => {
   searchQuery.value = ''
   searchSuggestions.value = []
-}
+}*/
 
 const selectSuggestion = (product) => {
-  goToProduct(product.id)
+  goToProduct(product.url)
 }
 
 // Подсветка совпадений
-const highlightMatch = (text, query) => {
+/*const highlightMatch = (text, query) => {
   if (!query) return text
   const regex = new RegExp(`(${query})`, 'gi')
   return text.replace(regex, '<mark>$1</mark>')
-}
+}*/
 
 // Фильтры
 const toggleFilter = (filter) => {
@@ -624,13 +544,14 @@ const buyNow = (product) => {
   router.push('/checkout')
 }
 
-const goToProduct = (id) => {
-  router.push(`/product/${id}`)
+const goToProduct = (url) => {
+  router.push(`/product/${url}`)
 }
 
 // Форматирование цены
 const formatPrice = (price) => {
-  return price?.toLocaleString('ru-RU') || 0
+  const num = Number(price); // Принудительно превращаем строку в число
+  return isNaN(num) ? '0' : num.toLocaleString('ru-RU');
 }
 
 // Сброс страницы при изменении фильтров
@@ -641,15 +562,14 @@ watch([searchQuery, filters, sortBy], () => {
 // Инициализация из URL параметров
 onMounted(() => {
   fetchProduct();
+
   if (route.query.search) 
   {
     searchQuery.value = route.query.search
     handleSearch()
   }
-  if (route.query.category) 
-  {
-    filters.value.categories = [route.query.category]
-  }
+
+  fetchCategories();
 })
 </script>
 

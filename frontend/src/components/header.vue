@@ -22,9 +22,6 @@
         <router-link to="/about" class="nav-link" :class="{ active: isActive('/about') }">
           О нас
         </router-link>
-        <router-link to="/contacts" class="nav-link" :class="{ active: isActive('/contacts') }">
-          Контакты
-        </router-link>
       </nav>
 
       <!-- Действия пользователя -->

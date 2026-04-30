@@ -216,7 +216,8 @@ const filteredProducts = computed(() => {
   let filtered = [...products.value];
 
   // Поиск
-  if (searchQuery.value) {
+  if (searchQuery.value) 
+  {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(product => 
       product.name.toLowerCase().includes(query) ||
