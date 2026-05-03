@@ -252,7 +252,7 @@ export const useAuthStore = defineStore('auth', {
 
         if(response.data.result === 'good')
         {
-          return { success: true, data: response.data };
+          return { success: true, data: response.data, count: response.data.count };
         }
         else 
         {
@@ -296,11 +296,13 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async searchProducts(string)
+    async searchProducts(string, categories, brands)
     {
       const response = await axios.post('/api/json.php', {
         type: 'search-product',
-        query: string
+        query: string,
+        categories: categories,
+        brands: brands
       });
 
       if(response.data.result === "good")
@@ -358,7 +360,7 @@ export const useAuthStore = defineStore('auth', {
         if(response.data.result === 'good')
         {
           //this.products = response.data.products;
-          return { success: true, data: response.data.data, count: response.data.count };
+          return { success: true, data: response.data.data, count: response.data.count, brands: response.data.brands };
         }
       }
       catch (error) 
@@ -489,7 +491,6 @@ export const useAuthStore = defineStore('auth', {
         const response = await axios.post('/api/json.php', { type: 'get_profile' });
         if (response.data.result === 'good') 
         {
-          console.log('user', response.data.user);
           this.user = response.data.user;
         } 
         else 

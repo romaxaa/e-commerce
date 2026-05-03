@@ -18,7 +18,6 @@
         <div class="product-gallery">
           <div class="main-image">
             <img :src="product.img" :alt="product.name">
-            <div class="badge" v-if="product.discount">-{{ product.discount }}%</div>
             <div class="badge new" v-if="product.isNew">Новинка</div>
           </div>
           <div class="thumbnail-list">
@@ -39,9 +38,9 @@
           
           <div class="product-rating">
             <div class="stars">
-              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= product.grade }">★</span>
+              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= comments.grade }">★</span>
             </div>
-            <span class="reviews-count">{{ product.grade }} отзывов</span>
+            <span class="reviews-count">{{ count }} отзывов</span>
             <span class="sku">Артикул: {{ product.sku }}</span>
           </div>
 
@@ -154,11 +153,11 @@
         <!-- Статистика отзывов -->
         <div class="reviews-stats">
           <div class="rating-summary">
-            <div class="average-rating">{{ product.grade }}</div>
+            <div class="average-rating">среднее </div>
             <div class="stars-big">
               <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= Math.floor(product.grade) }">★</span>
             </div>
-            <div class="total-reviews">{{  }} отзывов</div>
+            <div class="total-reviews">{{ count }} отзывов</div>
           </div>
           <div class="rating-bars">
             <div v-for="star in [5,4,3,2,1]" :key="star" class="rating-bar-item">
@@ -296,6 +295,7 @@ const authStore = useAuthStore();
 const product = ref(null);
 const specifications = ref(null);
 const comments = ref(null);
+const count = ref(null);
 
 // Текущее изображение
 const currentImage = ref('')
@@ -369,6 +369,7 @@ const loadComments = async () => {
     if (result.success) 
     {
       comments.value = result.data.comments;
+      count.value = result.count;
       console.log('Комменты успешно загружены!');
     } 
   }
@@ -423,7 +424,7 @@ const loadComments = async () => {
 })*/
 
 // Отзывы
-const reviews = ref([
+/*const reviews = ref([
   {
     id: 1,
     author: 'Алексей Иванов',
@@ -459,7 +460,7 @@ const reviews = ref([
     likes: 45,
     replies: []
   }
-])
+])*/
 
 // Похожие товары
 const similarProducts = ref([
@@ -498,15 +499,15 @@ const paginatedReviews = computed(() => {
   return reviews.value.slice(start, end)
 })
 
-const totalReviewPages = computed(() => Math.ceil(reviews.value.length / reviewsPerPage))
+const totalReviewPages = computed(() => Math.ceil(comments.value.length / reviewsPerPage))
 
 // Процент отзывов по рейтингу
 const getRatingCount = (star) => {
-  return reviews.value.filter(r => Math.floor(r.rating) === star).length
+  return comments.value.filter(r => Math.floor(r.grade) === star).length
 }
 
 const getRatingPercent = (star) => {
-  return (getRatingCount(star) / reviews.value.length) * 100
+  return (getRatingCount(star) / comments.value.length) * 100
 }
 
 // Форматирование цены
@@ -537,17 +538,9 @@ const toggleFavorite = () => {
 // Отправка отзыва
 const submitReview = async () => {
   const newReviewObj = {
-    id: Date.now(),
-    author: newReview.value.anonymous ? 'Аноним' : 'Текущий пользователь',
-    avatar: 'https://i.pravatar.cc/150?img=10',
     rating: newReview.value.rating,
-    title: newReview.value.title,
     content: newReview.value.content,
-    date: new Date().toLocaleDateString('ru-RU'),
-    likes: 0,
-    replies: []
   }
-  reviews.value.unshift(newReviewObj)
   showReviewModal.value = false
   newReview.value = { rating: 5, title: '', content: '', anonymous: false }
 

@@ -4,7 +4,7 @@
       <!-- Hero секция с поиском -->
       <section class="catalog-hero glass-panel">
         <h1>Каталог товаров</h1>
-        <p>{{ count }} товаров в нашем ассортименте</p>
+        <p>{{ productInfo.count }} товаров в нашем ассортименте</p>
         
         <!-- Глобальный поиск -->
         <div class="global-search">
@@ -12,6 +12,7 @@
             <input 
               type="text" 
               v-model="searchQuery" 
+              @input="handleSearch"
               placeholder="Поиск товаров по названию, категории, бренду..."
               class="search-input glass-input"
               autocomplete="off"
@@ -41,7 +42,7 @@
             <div v-show="openFilters.category" class="filter-options">
               <label v-for="cat in categories" :key="cat.name" class="filter-checkbox">
                 <input type="checkbox" :value="cat.name" v-model="filters.categories">
-                <span>{{ cat.name }}</span>
+                <span >{{ cat.name }}</span>
               </label>
             </div>
           </div>
@@ -75,9 +76,9 @@
               <span class="filter-arrow">{{ openFilters.brand ? '▼' : '▶' }}</span>
             </div>
             <div v-show="openFilters.brand" class="filter-options">
-              <label v-for="brand in brands" :key="brand.name" class="filter-checkbox">
-                <input type="checkbox" :value="brand.name" v-model="filters.brands">
-                <span>{{ brand.name }} ({{ brand.count }})</span>
+              <label v-for="brand in productInfo.brands" :key="brand.name" class="filter-checkbox">
+                <input type="checkbox" :value="brand.id" v-model="filters.brands">
+                <span>{{ brand.name }}</span>
               </label>
             </div>
           </div>
@@ -120,7 +121,7 @@
           <!-- Сортировка -->
           <div class="sorting-bar glass-panel">
             <div class="sorting-left">
-              <span>Найдено: {{ count }} товаров</span>
+              <span>Найдено: {{ productInfo.count }} товаров</span>
               <!--<span class="active-filters" v-if="activeFiltersCount">
                 • {{ activeFiltersCount }} фильтра
               </span>-->
@@ -234,7 +235,7 @@ const route = useRoute()
 const router = useRouter()
 
 const products = ref([]);
-const count = ref(null);
+const productInfo = ref({});
 const categories = ref([]);
 const searchResult = ref([]);     // Сюда пишем результат поиска
 const isSearching = ref(false);
@@ -270,13 +271,9 @@ const openFilters = ref({
   stock: false
 })
 
-const brands = ref([
-  { name: 'Apple', count: 89 },
-  { name: 'Samsung', count: 67 },
-  { name: 'Sony', count: 45 },
-  { name: 'Xiaomi', count: 78 },
-  { name: 'Google', count: 23 }
-])
+const toggleFilter = (filter) => {
+  openFilters.value[filter] = !openFilters.value[filter]
+}
 
 // Минимальная и максимальная цена
 const minPrice = ref(0)
@@ -291,8 +288,11 @@ const fetchProduct = async () => {
     if (result.success) 
     {
       products.value = result.data;
-      count.value = result.count;
-      console.log(count.value);
+      productInfo.value = {
+        brands: result.brands,
+        count: result.count
+      };
+      console.log(productInfo.value.brands);
     } 
     else 
     {
@@ -310,7 +310,6 @@ const fetchCategories = async() => {
   if (result.success) 
   {
     categories.value = result.categories;
-    console.log(categories.value);
   } 
   else 
   {
@@ -323,7 +322,7 @@ const handleSearch = async () => {
   {
     isSearching.value = true;
     // Можно прокинуть сюда и фильтры, если нужно
-    const result = await authStore.searchProducts(searchQuery.value);
+    const result = await authStore.searchProducts(searchQuery.value, filters.value.categories, filters.value.brands);
     if(result.success)
     {
       searchResult.value = result.data;
@@ -351,118 +350,6 @@ const handleSearch = async () => {
     isFavorite: false,
     image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=300&h=300&fit=crop',
     description: 'Титан. Прочный и легкий. Новый корпус из титана авиационного класса.'
-  },
-  {
-    id: 2,
-    name: 'Samsung Galaxy S24',
-    category: 'Смартфоны',
-    brand: 'Samsung',
-    price: 79990,
-    oldprice: 109990,
-    discount: 27,
-    rating: 4.8,
-    reviews: 892,
-    stock: 32,
-    isNew: true,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=300&h=300&fit=crop',
-    description: 'Искусственный интеллект нового поколения. Мощный процессор.'
-  },
-  {
-    id: 3,
-    name: 'MacBook Air M3',
-    category: 'Ноутбуки',
-    brand: 'Apple',
-    price: 119990,
-    oldprice: 159990,
-    discount: 25,
-    rating: 4.9,
-    reviews: 634,
-    stock: 23,
-    isNew: true,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&h=300&fit=crop',
-    description: 'Сверхпортативный. Невероятно быстрый. Чип M3.'
-  },
-  {
-    id: 4,
-    name: 'Sony WH-1000XM5',
-    category: 'Наушники',
-    brand: 'Sony',
-    price: 24990,
-    oldprice: 34990,
-    discount: 28,
-    rating: 4.9,
-    reviews: 1123,
-    stock: 67,
-    isNew: false,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=300&h=300&fit=crop',
-    description: 'Лучшее шумоподавление. Превосходное качество звука.'
-  },
-  {
-    id: 5,
-    name: 'Apple Watch Series 9',
-    category: 'Часы',
-    brand: 'Apple',
-    price: 35990,
-    oldprice: 45990,
-    discount: 22,
-    rating: 4.8,
-    reviews: 856,
-    stock: 89,
-    isNew: true,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&h=300&fit=crop',
-    description: 'S9 SiP. Яркий дисплей. Новые жесты.'
-  },
-  {
-    id: 6,
-    name: 'DJI Mini 4 Pro',
-    category: 'Камеры',
-    brand: 'DJI',
-    price: 69990,
-    oldprice: 89990,
-    discount: 22,
-    rating: 4.9,
-    reviews: 423,
-    stock: 12,
-    isNew: true,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1506947411487-a56738267384?w=300&h=300&fit=crop',
-    description: '4K HDR видео. Умные функции. Компактный размер.'
-  },
-  {
-    id: 7,
-    name: 'GoPro Hero 12',
-    category: 'Камеры',
-    brand: 'GoPro',
-    price: 39990,
-    oldprice: 49990,
-    discount: 20,
-    rating: 4.8,
-    reviews: 356,
-    stock: 0,
-    isNew: true,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1524143986875-3b098d78b363?w=300&h=300&fit=crop',
-    description: 'Экшн-камера нового поколения. 5.3K видео.'
-  },
-  {
-    id: 8,
-    name: 'Xiaomi Pad 6',
-    category: 'Аксессуары',
-    brand: 'Xiaomi',
-    price: 29990,
-    oldprice: 39990,
-    discount: 25,
-    rating: 4.7,
-    reviews: 234,
-    stock: 56,
-    isNew: false,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1589739900243-4b52cd9dd104?w=300&h=300&fit=crop',
-    description: '144Hz дисплей. Процессор Snapdragon 870.'
   }
 ])*/
 
@@ -508,11 +395,6 @@ const selectSuggestion = (product) => {
   const regex = new RegExp(`(${query})`, 'gi')
   return text.replace(regex, '<mark>$1</mark>')
 }*/
-
-// Фильтры
-const toggleFilter = (filter) => {
-  openFilters.value[filter] = !openFilters.value[filter]
-}
 
 const resetFilters = () => {
   filters.value = {

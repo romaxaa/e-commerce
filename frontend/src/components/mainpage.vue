@@ -3,7 +3,7 @@
     <!-- Hero секция с поиском и баннером -->
     <section class="shop-hero glass-panel">
       <div class="hero-content">
-        <span class="hero-badge">🔥 Осенняя распродажа</span>
+        <span class="hero-badge">🔥 Весенняя распродажа</span>
         <h1>Премиальная<br><span class="gradient-text">электроника</span></h1>
         <p>Скидки до 50% на топовые модели. Успей купить по выгодной цене!</p>
         
@@ -40,14 +40,13 @@
       </div>
 
       <!-- Hero карточка товара -->
-      <div class="hero-card">
+      <div v-if="filteredProducts[0]" class="hero-card">
         <div class="hero-product">
-          <img src="https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400&h=400&fit=crop" alt="Featured product">
+          <img :src="filteredProducts[0].img" :alt="filteredProducts[0].name">
           <div class="hero-product-info">
-            <h3>Sony WH-1000XM5</h3>
+            <h3>{{ filteredProducts[0].name }}</h3>
             <div class="price">
-              <span class="current">24 990 ₽</span>
-              <span class="old">34 990 ₽</span>
+              <span class="current">{{ formatPrice(filteredProducts[0].price) }} ₽</span>
             </div>
             <button class="glass-button">Купить сейчас</button>
           </div>
@@ -97,13 +96,6 @@
             <span class="old-price" v-if="product.oldprice">{{ product.oldprice}} ₽</span>
           </div>
 
-          <!-- Характеристики -->
-          <!--<div class="product-specs">
-            <span v-for="spec in product.specs.slice(0, 2)" :key="spec" class="spec-tag">
-              {{ spec }}
-            </span>
-          </div>-->
-
           <!-- Кнопки действий -->
           <div class="product-actions">
             <button class="cart-btn" @click="addToCart(product)">
@@ -126,7 +118,7 @@
     </div>
 
     <!-- Пагинация -->
-    <div class="pagination" v-if="totalPages > 1">
+    <!--<div class="pagination" v-if="totalPages > 1">
       <button 
         class="pagination-btn" 
         :disabled="currentPage === 1"
@@ -142,7 +134,9 @@
       >
         Вперед →
       </button>
-    </div>
+    </div>-->
+
+    <router-link class="pagination-btn text-center" :to="`/catalog`">Все товары</router-link>
 
     <!-- Баннер подписки -->
     <div v-if="!authStore.user" class="newsletter-banner glass-panel">
@@ -185,23 +179,8 @@ const loadProducts = async () => {
   else 
   {
     products.value = result.data || result.products || result;
-    console.log('Загружено продуктов:', products.value.length);
   }
 };
-
-/*const loadCategories = async () => {
-  const result = await authStore.categories();
-  
-  if (!result.success) 
-  {
-    console.error('Ошибка загрузки:', result.error);
-  } 
-  else 
-  {
-    categories.value = result.data || result.categories || result;
-    console.log('Загружено категорий:', categories.value.length);
-  }
-};*/
 
 onMounted(async () => {
   await loadProducts();
@@ -219,15 +198,7 @@ const filteredProducts = computed(() => {
   if (searchQuery.value) 
   {
     const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(product => 
-      product.name.toLowerCase().includes(query) ||
-      product.category.toLowerCase().includes(query)
-    );
-  }
 
-  // Категория
-  if (selectedCategory.value && selectedCategory.value !== 'Все товары') {
-    filtered = filtered.filter(product => product.category === selectedCategory.value);
   }
 
   // Пагинация
@@ -242,12 +213,9 @@ const totalPages = computed(() => {
   
   let total = [...products.value];
   
-  if (searchQuery.value) {
+  if (searchQuery.value) 
+  {
     const query = searchQuery.value.toLowerCase();
-    total = total.filter(product => 
-      product.name.toLowerCase().includes(query) ||
-      product.category.toLowerCase().includes(query)
-    );
   }
   
   if (selectedCategory.value && selectedCategory.value !== 'Все товары') {
@@ -265,11 +233,6 @@ const formatPrice = (price) => {
 // Добавить в корзину
 const addToCart = (product) => {
   console.log('Добавлено в корзину:', product);
-};
-
-// Быстрый просмотр
-const quickView = (product) => {
-  console.log('Быстрый просмотр:', product);
 };
 
 // Избранное
