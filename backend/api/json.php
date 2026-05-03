@@ -2,12 +2,17 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../vendor/autoload.php';
-
+require_once __DIR__ . '/../search/productSearch.php';
 require_once __DIR__ . '/../include/config.php';
 
 session_start();
 
 use Namshi\JOSE\SimpleJWS;
+use Meilisearch\Client;
+use App\Search\productsearch;
+
+$client = new Client('http://meilisearch:7700', 'asdasd123');
+
 
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -312,15 +317,77 @@ switch ($action)
     case 'get_products':
 
         $products = R::getall('SELECT p.*, c.name as category_name FROM products p INNER JOIN category c ON p.category_id = c.id');
-
-        echo json_encode(['result' => 'good', 'products' => $products]);
-        return;
-
-        if(empty($products))
+        $brands = R::getall('SELECT * FROM brands');
+            
+        if($products)
         {
-            echo json_encode(['result' => 'emty']);
+            foreach($products as $product)
+            {
+                if(isset($product['specifications']) && !empty($product['specifications'])) 
+                {
+                    $specs = json_decode($product['specifications'], true);
+                    $product['specifications'] = $specs;
+
+                    /*if(isset($specs['brand']) && !empty($specs['brand'])) 
+                    {
+                        $brandName = $specs['brand'];
+                        
+                        // Проверяем, есть ли уже такой бренд
+                        $existingKey = null;
+                        foreach($brands as $key => $brand) 
+                        {
+                            if($brand['name'] === $brandName) 
+                            {
+                                $existingKey = $key;
+                                break;
+                            }
+                        }
+                        
+                        // Если бренда нет, добавляем с новым ID
+                        if($existingKey === null) 
+                        {
+                            $brands[] = ['id' => count($brands) + 1, 'name' => $brandName];
+                        }
+                    }*/
+                }  
+            } 
+
+            echo json_encode(['result' => 'good', 'data' => $products, 'count' => count($products), 'brands' => $brands]);
             return;
         }
+        else
+        {
+            echo json_encode(['result' => 'bad']);
+            return;
+        }
+
+    break 1;
+
+    case 'get_product_by_slug':
+
+        if(isset($data['slug']))
+        {
+            $product = R::getrow('SELECT p.*, c.name AS category_name FROM products p INNER JOIN category c ON p.category_id = c.id WHERE url = ?', [$data['slug']]);
+
+            if($product)
+            {
+                $specifications = json_decode($product['specifications'], true);
+
+                echo json_encode(['result' => 'good', 'data' => $product, 'specifications' => $specifications]);
+                return;
+            }
+            else
+            {
+                echo json_encode(['result' => 'bad']);
+                return;
+            }
+        }
+        else
+        {
+            echo json_encode(['result' => 'no_slug']);
+            return;
+        }
+
     break 1;
 
     case 'create-product':
@@ -715,6 +782,47 @@ switch ($action)
         }
     break 1;
 
+    case 'search-product':
+        if(!isset($data['query']) && !isset($data['categories']))
+        {
+            echo json_encode(['result' => 'no_query']);
+            return;
+        }
+        else
+        {
+            $search = new ProductSearch($client);
+            $filters = [];
+
+            if (!empty($data['categories'])) {
+                // Оборачиваем каждое название в одинарные кавычки
+                $formattedCats = array_map(function($cat) {
+                    return "'" . $cat . "'";
+                }, $data['categories']);
+                
+                $catList = implode(', ', $formattedCats);
+                $filters[] = "category IN [$catList]";
+            }
+
+            if (!empty($data['brands'])) {
+                $formattedBrands = array_map(function($b) {
+                    return "'" . $b . "'";
+                }, $data['brands']);
+                
+                $brandList = implode(', ', $formattedBrands);
+                $filters[] = "brand IN [$brandList]";
+            }
+
+            $filterString = implode(' AND ', $filters);
+
+            $index = $client->index('products');
+            $result = $index->search($data['query'], ['filter' => $filterString]);
+            $products = $result->getHits();
+
+            echo json_encode(['result' => 'good', 'data' => $products]);
+            return;
+        }
+    break 1;
+
     case 'save-adress':
         if(empty($_SESSION['logged_user']))
         {
@@ -763,33 +871,6 @@ switch ($action)
         }
     break 1;
 
-    case 'get_product_by_slug':
-
-        if(isset($data['slug']))
-        {
-            $product = R::getrow('SELECT p.*, c.name AS category_name FROM products p INNER JOIN category c ON p.category_id = c.id WHERE url = ?', [$data['slug']]);
-
-            if($product)
-            {
-                $specifications = json_decode($product['specifications'], true);
-
-                echo json_encode(['result' => 'good', 'data' => $product, 'specifications' => $specifications]);
-                return;
-            }
-            else
-            {
-                echo json_encode(['result' => 'bad']);
-                return;
-            }
-        }
-        else
-        {
-            echo json_encode(['result' => 'no_slug']);
-            return;
-        }
-
-    break 1;
-
     case 'fetch-comments':
         if(!isset($data['id']))
         {
@@ -803,8 +884,17 @@ switch ($action)
 
             if($comments)
             {
-                echo json_encode(['result' => 'good', 'comments' => $comments]);
-                return;
+                $count = R::getCell('SELECT COUNT(product_id) FROM `reviews` WHERE `product_id` = 1');
+                if($count)
+                {
+                    echo json_encode(['result' => 'good', 'comments' => $comments, 'count' => $count]);
+                    return;
+                }
+                else
+                {
+                    echo json_encode(['result' => 'good', 'comments' => $comments]);
+                    return;
+                }
             }
             else
             {

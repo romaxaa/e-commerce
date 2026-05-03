@@ -62,6 +62,19 @@ services:
     networks:
       - app-network
 
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: meilisearch
+    ports:
+      - "7700:7700"
+    volumes:
+      - ./meili_data:/meili_data
+    environment:
+      - MEILI_MASTER_KEY=asdasd123 # Обязательно для продакшена
+      - MEILI_ENV=development # В разработке выключает лишнюю защиту
+    networks:
+      - app-network
+
   websocket:
     build: ./docker/php
     command: php /var/www/websocket/server.php
