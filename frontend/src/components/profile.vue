@@ -110,7 +110,7 @@
             </button>
           </div>
 
-          <div class="addresses-list">
+          <div v-if="addresses != null" class="addresses-list">
             <div v-for="address in addresses" :key="address.id" class="address-card">
               <div class="address-info">
                 <div class="address-type">
@@ -156,17 +156,6 @@
               </div>
               <button class="setting-btn" @click="showPasswordModal = true">Изменить</button>
             </div>
-            
-            <div class="setting-item">
-              <div class="setting-info">
-                <span>Двухфакторная аутентификация</span>
-                <p class="setting-desc">Повысьте безопасность аккаунта</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" v-model="settings.twoFactor">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
           </div>
 
           <div class="settings-section">
@@ -181,17 +170,7 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
-            
-            <div class="setting-item">
-              <div class="setting-info">
-                <span>SMS уведомления</span>
-                <p class="setting-desc">Уведомления о статусе заказа</p>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" v-model="settings.smsNotifications">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
+          
           </div>
 
           <div class="settings-section">
@@ -205,17 +184,6 @@
                 <input type="checkbox" v-model="settings.publicProfile">
                 <span class="toggle-slider"></span>
               </label>
-            </div>
-          </div>
-
-          <div class="settings-section danger-section">
-            <h3>Опасная зона</h3>
-            <div class="setting-item">
-              <div class="setting-info">
-                <span>Удалить аккаунт</span>
-                <p class="setting-desc">Это действие необратимо. Все данные будут удалены</p>
-              </div>
-              <button class="danger-btn" @click="showDeleteModal = true">Удалить аккаунт</button>
             </div>
           </div>
         </div>
@@ -336,8 +304,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore';
+import { useAlertStore } from '../stores/alertStore'; 
 
 const authStore = useAuthStore();
+const alerts = useAlertStore();
 const router = useRouter();
 
 const cities = ref(null);
@@ -365,7 +335,11 @@ const updateProfile = async () => {
 
   if(!result.success)
   {
-      console.log(result.error);
+    console.log(result.error);
+  }
+  else
+  {
+    alerts.show('Данные успешно изменены!', 'success');
   }
 }
 
@@ -382,6 +356,29 @@ const saveAddress = async () => {
   }
 }
 
+const changePassword = async () => {
+  const result = await authStore.editPassword(passwordForm.current, passwordForm.new, passwordForm.confirm);
+  if (passwordForm.new !== passwordForm.confirm) 
+  {
+    alerts.show('Пароли не совпадают')
+    return
+  }
+  if (passwordForm.new.length < 6)
+  {
+    alerts.show('Пароль должен содержать минимум 6 символов', 'bad');
+    return
+  }
+  if(result.success)
+  {
+    showPasswordModal.value = false;
+    alerts.show('Данные успешно изменены!', 'success');
+  }
+  else
+  {
+    console.log(result.error);
+  }
+}
+
 // Табы навигации
 const tabs = ref([
   { id: 'profile', icon: '👤', label: 'Личные данные' },
@@ -390,34 +387,19 @@ const tabs = ref([
   { id: 'settings', icon: '⚙️', label: 'Настройки' }
 ])
 
+// Форма пароля
+const passwordForm = reactive({
+  current: '',
+  new: '',
+  confirm: ''
+})
+
 // Статистика
 const stats = ref({
   orders: 12,
   favorites: 8,
   reviews: 5
 })
-
-// Адреса доставки
-const addresses = ref([
-  {
-    id: 1,
-    type: 'Дом',
-    street: 'ул. Тверская, д. 15, кв. 45',
-    city: 'Москва',
-    postalCode: '125009',
-    phone: '+7 (999) 123-45-67',
-    isDefault: true
-  },
-  {
-    id: 2,
-    type: 'Работа',
-    street: 'пр. Ленина, д. 10, офис 505',
-    city: 'Москва',
-    postalCode: '119019',
-    phone: '+7 (999) 765-43-21',
-    isDefault: false
-  }
-])
 
 // Заказы
 const orders = ref([
@@ -467,13 +449,6 @@ const addressForm = reactive({
   isDefault: false
 })
 
-// Форма пароля
-const passwordForm = reactive({
-  current: '',
-  new: '',
-  confirm: ''
-})
-
 // Подтверждение удаления
 const deleteConfirm = ref('')
 
@@ -489,7 +464,7 @@ const profileForm = reactive({
     lastname: authStore.user?.surname,
     email: authStore.user?.email,
     phone: authStore.user?.phone,
-    birthday: authStore.user?.birthday,
+    birthday: authStore.user?.birthdays,
     bio: authStore.user?.bio,
     avatar: authStore.user?.avatar
 })
@@ -565,29 +540,6 @@ const resetAddressForm = () => {
   addressForm.office = ''
   addressForm.isDefault = false
   editingAddress.value = null
-}
-
-// Смена пароля
-const changePassword = async () => {
-  if (passwordForm.new !== passwordForm.confirm) {
-    alert('Пароли не совпадают')
-    return
-  }
-  if (passwordForm.new.length < 6) {
-    alert('Пароль должен содержать минимум 6 символов')
-    return
-  }
-  
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    alert('Пароль успешно изменен!')
-    showPasswordModal.value = false
-    passwordForm.current = ''
-    passwordForm.new = ''
-    passwordForm.confirm = ''
-  } catch (error) {
-    alert('Ошибка смены пароля')
-  }
 }
 
 // Удаление аккаунта
