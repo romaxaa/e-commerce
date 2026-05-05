@@ -37,11 +37,12 @@
           <h1 class="product-title">{{ product.name }}</h1>
           
           <div class="product-rating">
-            <div class="stars">
-              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= comments.grade }">★</span>
+            <div class="stars" v-if="comments != null">
+              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= averageRating  }">★</span>
             </div>
-            <span class="reviews-count">{{ count }} отзывов</span>
-            <span class="sku">Артикул: {{ product.sku }}</span>
+            <div v-if="count != null" class="flex gap-2">
+              <span class="reviews-count">{{ count }} отзывов</span>
+            </div>
           </div>
 
             <div class="product-price">
@@ -151,79 +152,85 @@
         </div>
 
         <!-- Статистика отзывов -->
-        <div class="reviews-stats">
-          <div class="rating-summary">
-            <div class="average-rating">среднее </div>
-            <div class="stars-big">
-              <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= Math.floor(product.grade) }">★</span>
-            </div>
-            <div class="total-reviews">{{ count }} отзывов</div>
-          </div>
-          <div class="rating-bars">
-            <div v-for="star in [5,4,3,2,1]" :key="star" class="rating-bar-item">
-              <span class="star-label">{{ star }} ★</span>
-              <div class="bar-bg">
-                <div class="bar-fill" :style="{ width: getRatingPercent(star) + '%' }"></div>
+        <div v-if="comments != null && comments.length">
+          <div class="reviews-stats">
+            <div class="rating-summary">
+              <div class="average-rating"> {{ averageRating }} </div>
+              <div class="stars-big">
+                <span v-for="i in 5" :key="i" class="star" :class="{ active: i <= Math.floor(averageRating) }">★</span>
               </div>
-              <span class="bar-count">{{ getRatingCount(star) }}</span>
+              <div class="total-reviews">{{ count }} отзывов</div>
             </div>
+            <div class="rating-bars">
+              <div v-for="star in [5,4,3,2,1]" :key="star" class="rating-bar-item">
+                <span class="star-label">{{ star }} ★</span>
+                <div class="bar-bg">
+                  <div class="bar-fill" :style="{ width: getRatingPercent(star) + '%' }"></div>
+                </div>
+                <span class="bar-count">{{ getRatingCount(star) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Список отзывов -->
+          <div class="reviews-list">
+            <div v-for="comment in comments" :key="comment.id" :value="comment.id" class="review-card">
+              <div class="review-header">
+                <div class="reviewer-info">
+                  <img :src="comment.img" :alt="comment.name" class="reviewer-avatar">
+                  <div class="reviewer-details">
+                    <span class="reviewer-name">{{ comment.name }} {{ comment.surname }}</span>
+                    <span class="review-date">{{ formatDateTime(comment.created_at) }}</span>
+                  </div>
+                </div>
+                <div class="review-rating">
+                  <span v-for="i in 5" :key="i" class="star small" :class="{ active: i <= comment.grade }">★</span>
+                </div>
+              </div>
+              <div class="review-content">
+                <p>{{ comment.comment }}</p>
+              </div>
+              <div class="review-footer">
+                <button class="like-btn" @click="likeReview(review.id)">
+                  👍 {{ comment.likes ?? 0 }}
+                </button>
+                <button class="reply-btn" @click="showReplyForm(review.id)">
+                  💬 Ответить
+                </button>
+              </div>
+              
+              <!-- Ответы на отзыв -->
+              <!--<div v-if="review.replies && review.replies.length" class="replies-list">
+                <div v-for="reply in review.replies" :key="reply.id" class="reply-card">
+                  <div class="reply-header">
+                    <span class="reply-author">{{ reply.author }}</span>
+                    <span class="reply-date">{{ reply.date }}</span>
+                  </div>
+                  <p class="reply-content">{{ reply.content }}</p>
+                </div>
+              </div>-->
+
+              <!-- Форма ответа -->
+              <div v-if="replyFormId === comment.id" class="reply-form">
+                <textarea v-model="replyText" placeholder="Ваш ответ..." rows="2" class="glass-input"></textarea>
+                <div class="reply-actions">
+                  <button class="cancel-btn" @click="replyFormId = null">Отмена</button>
+                  <button class="submit-btn" @click="submitReply(review.id)">Ответить</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Пагинация отзывов -->
+          <div class="pagination" v-if="totalReviewPages > 1">
+            <button class="page-btn" :disabled="currentReviewPage === 1" @click="currentReviewPage--">←</button>
+            <span class="page-info">{{ currentReviewPage }} / {{ totalReviewPages }}</span>
+            <button class="page-btn" :disabled="currentReviewPage === totalReviewPages" @click="currentReviewPage++">→</button>
           </div>
         </div>
 
-        <!-- Список отзывов -->
-        <div class="reviews-list">
-          <div v-for="comment in comments" :key="comment.id" :value="comment.id" class="review-card">
-            <div class="review-header">
-              <div class="reviewer-info">
-                <img :src="comment.img" :alt="comment.name" class="reviewer-avatar">
-                <div class="reviewer-details">
-                  <span class="reviewer-name">{{ comment.name }} {{ comment.surname }}</span>
-                  <span class="review-date">{{ formatDateTime(comment.created_at) }}</span>
-                </div>
-              </div>
-              <div class="review-rating">
-                <span v-for="i in 5" :key="i" class="star small" :class="{ active: i <= comment.grade }">★</span>
-              </div>
-            </div>
-            <div class="review-content">
-              <p>{{ comment.comment }}</p>
-            </div>
-            <div class="review-footer">
-              <button class="like-btn" @click="likeReview(review.id)">
-                👍 {{ comment.likes ?? 0 }}
-              </button>
-              <button class="reply-btn" @click="showReplyForm(review.id)">
-                💬 Ответить
-              </button>
-            </div>
-            
-            <!-- Ответы на отзыв -->
-            <!--<div v-if="review.replies && review.replies.length" class="replies-list">
-              <div v-for="reply in review.replies" :key="reply.id" class="reply-card">
-                <div class="reply-header">
-                  <span class="reply-author">{{ reply.author }}</span>
-                  <span class="reply-date">{{ reply.date }}</span>
-                </div>
-                <p class="reply-content">{{ reply.content }}</p>
-              </div>
-            </div>-->
-
-            <!-- Форма ответа -->
-            <div v-if="replyFormId === comment.id" class="reply-form">
-              <textarea v-model="replyText" placeholder="Ваш ответ..." rows="2" class="glass-input"></textarea>
-              <div class="reply-actions">
-                <button class="cancel-btn" @click="replyFormId = null">Отмена</button>
-                <button class="submit-btn" @click="submitReply(review.id)">Ответить</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Пагинация отзывов -->
-        <div class="pagination" v-if="totalReviewPages > 1">
-          <button class="page-btn" :disabled="currentReviewPage === 1" @click="currentReviewPage--">←</button>
-          <span class="page-info">{{ currentReviewPage }} / {{ totalReviewPages }}</span>
-          <button class="page-btn" :disabled="currentReviewPage === totalReviewPages" @click="currentReviewPage++">→</button>
+        <div v-else>
+          <span class="text-gray-400">Отзывов покупателей нет</span>
         </div>
       </div>
 
@@ -277,6 +284,7 @@
         </div>
       </div>
     </transition>
+
   </div>
 </template>
 
@@ -387,81 +395,6 @@ const loadComments = async () => {
   }
 }
 
-// Данные товара
-/*const product = ref({
-  id: 1,
-  name: 'iPhone 15 Pro',
-  category: 'Смартфоны',
-  price: 89990,
-  oldPrice: 119990,
-  discount: 25,
-  rating: 4.8,
-  reviews: 1247,
-  sku: 'IP15P-128-SP',
-  stock: 45,
-  isNew: true,
-  description: 'iPhone 15 Pro — это вершина инженерной мысли. Титан. Прочный и легкий. Новый корпус из титана авиационного класса делает iPhone 15 Pro невероятно прочным и легким. Задняя панель из матового стекла и керамический щиток спереди обеспечивают максимальную защиту. Динамический островок. Умный способ взаимодействия. Dynamic Island выводит уведомления и активности на передний план, создавая новый способ взаимодействия. A17 Pro. Мощный чип следующего поколения. A17 Pro открывает новую эру мобильного гейминга с невероятно реалистичной графикой и быстрой производительностью.',
-  images: [
-    'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=600&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&h=600&fit=crop'
-  ],
-  colors: [
-    { name: 'Титан', code: '#8a8a8a' },
-    { name: 'Черный', code: '#1a1a1a' },
-    { name: 'Белый', code: '#ffffff' }
-  ],
-  specifications: ['128GB', 'A17 Pro', '6.1"', '48MP'],
-  fullSpecs: {
-    'Процессор': 'Apple A17 Pro',
-    'Оперативная память': '8 GB',
-    'Встроенная память': '128 GB',
-    'Экран': '6.1" Super Retina XDR',
-    'Камера': '48 МП + 12 МП + 12 МП',
-    'Аккумулятор': '3274 мАч',
-    'ОС': 'iOS 17'
-  }
-})*/
-
-// Отзывы
-/*const reviews = ref([
-  {
-    id: 1,
-    author: 'Алексей Иванов',
-    avatar: 'https://i.pravatar.cc/150?img=1',
-    rating: 5,
-    title: 'Лучший смартфон на рынке!',
-    content: 'Пользуюсь телефоном уже месяц. Очень доволен камерой и производительностью. Батарея держит весь день при активном использовании. Экран просто потрясающий!',
-    date: '15 марта 2024',
-    likes: 24,
-    replies: [
-      { id: 1, author: 'Admin', date: '16 марта 2024', content: 'Спасибо за отзыв!' }
-    ]
-  },
-  {
-    id: 2,
-    author: 'Мария Смирнова',
-    avatar: 'https://i.pravatar.cc/150?img=2',
-    rating: 4,
-    title: 'Хороший телефон, но дороговато',
-    content: 'Телефон отличный, все работает быстро. Но цена кусается. Камера радует, особенно ночная съемка. Зарядки хватает на день.',
-    date: '10 марта 2024',
-    likes: 12,
-    replies: []
-  },
-  {
-    id: 3,
-    author: 'Дмитрий Петров',
-    avatar: 'https://i.pravatar.cc/150?img=3',
-    rating: 5,
-    title: 'Восторг!',
-    content: 'Перешел с Android и ни разу не пожалел. iOS работает плавно, приложения летают. Динамический остров - удобная штука. Рекомендую!',
-    date: '5 марта 2024',
-    likes: 45,
-    replies: []
-  }
-])*/
-
 // Похожие товары
 const similarProducts = ref([
   {
@@ -499,16 +432,34 @@ const paginatedReviews = computed(() => {
   return reviews.value.slice(start, end)
 })
 
-const totalReviewPages = computed(() => Math.ceil(comments.value.length / reviewsPerPage))
+if(comments.value != null)
+{
+  const totalReviewPages = computed(() => Math.ceil(comments.value.length / reviewsPerPage))
+}
 
 // Процент отзывов по рейтингу
 const getRatingCount = (star) => {
-  return comments.value.filter(r => Math.floor(r.grade) === star).length
+  if(comments.value != null)
+  {
+    return comments.value.filter(r => Math.floor(r.grade) === star).length
+  }
 }
 
 const getRatingPercent = (star) => {
-  return (getRatingCount(star) / comments.value.length) * 100
+  if(comments.value != null)
+  {
+    return (getRatingCount(star) / comments.value.length) * 100
+  }
 }
+
+const averageRating = computed(() => {
+  if (!comments.value || comments.value.length === 0) return 0
+  
+  const sum = comments.value.reduce((total, comment) => {
+    return total + Number(comment.grade)
+  }, 0)
+  return sum / comments.value.length
+})
 
 // Форматирование цены
 const formatPrice = (price) => {

@@ -102,7 +102,7 @@
       </section>
 
       <div class="contact-support">
-        <p>Остались вопросы? Напишите нам на <a href="mailto:delivery@glassshop.ru">info@glassshop.ru</a></p>
+        <p>Остались вопросы? Напишите нам на <a href="mailto:info@glassshop.ru">info@glassshop.ru</a></p>
       </div>
     </div>
   </div>

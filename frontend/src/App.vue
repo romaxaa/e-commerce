@@ -1,6 +1,6 @@
 <script setup>
-import TheHeader from './components/header.vue';
-import TheFooter from './components/footer.vue';
+import TheHeader from './components/elements/header.vue';
+import TheFooter from './components/elements/footer.vue';
 import AlertContainer from './components/elements/AlertContainer.vue';
 </script>
 

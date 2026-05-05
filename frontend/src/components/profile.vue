@@ -166,7 +166,7 @@
                 <p class="setting-desc">Получать новости и специальные предложения</p>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" v-model="settings.emailNotifications">
+                <input type="checkbox" v-model="profileForm.visible" @input="updateProfile">
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -181,7 +181,7 @@
                 <p class="setting-desc">Ваш профиль будет виден в отзывах и комментариях</p>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" v-model="settings.publicProfile">
+                <input type="checkbox" v-model="profileForm.notifications" @input="updateProfile">
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -331,7 +331,7 @@ const fetchCityies = async () => {
 };
 
 const updateProfile = async () => {
-  const result = await authStore.update_user_info(authStore.user.id, profileForm.name, profileForm.surname, profileForm.email, profileForm.phone, profileForm.birthday, profileForm.bio);
+  const result = await authStore.update_user_info(authStore.user.id, profileForm.name, profileForm.surname, profileForm.email, profileForm.phone, profileForm.birthday, profileForm.bio, profileForm.notifications, profileForm.visible);
 
   if(!result.success)
   {
@@ -425,14 +425,6 @@ const orders = ref([
   }
 ])
 
-// Настройки
-const settings = ref({
-  twoFactor: false,
-  emailNotifications: true,
-  smsNotifications: true,
-  publicProfile: true
-})
-
 // Состояния модальных окон
 const showAddressModal = ref(false)
 const showPasswordModal = ref(false)
@@ -466,7 +458,16 @@ const profileForm = reactive({
     phone: authStore.user?.phone,
     birthday: authStore.user?.birthdays,
     bio: authStore.user?.bio,
-    avatar: authStore.user?.avatar
+    avatar: authStore.user?.avatar,
+    visible: authStore.user?.visible,
+    notifications: authStore.user?.visible
+})
+
+// Настройки
+const settings = ref({
+  emailNotifications: true,
+  smsNotifications: true,
+  publicProfile: true
 })
 
 // Загрузка аватара

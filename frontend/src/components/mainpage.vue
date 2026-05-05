@@ -20,21 +20,8 @@
 
         <!-- Категории -->
         <div class="categories">
-          <button 
-            v-for="category in categories" 
-            :key="category.id"
-            class="category-chip"
-            :class="{ active: selectedCategory === category.name }"
-            @click="selectedCategory = category.name"
-          >
+          <button v-for="category in categories" :key="category.id" class="category-chip" @click="selectedCategory = category.name">
             {{ category.name }}
-          </button>
-          <button 
-            v-if="selectedCategory"
-            class="category-chip clear-chip"
-            @click="selectedCategory = ''"
-          >
-            ✕ Сбросить
           </button>
         </div>
       </div>
@@ -117,25 +104,6 @@
       <button class="glass-button" @click="resetFilters">Сбросить фильтры</button>
     </div>
 
-    <!-- Пагинация -->
-    <!--<div class="pagination" v-if="totalPages > 1">
-      <button 
-        class="pagination-btn" 
-        :disabled="currentPage === 1"
-        @click="currentPage--"
-      >
-        ← Назад
-      </button>
-      <span class="page-info">Страница {{ currentPage }} из {{ totalPages }}</span>
-      <button 
-        class="pagination-btn" 
-        :disabled="currentPage === totalPages"
-        @click="currentPage++"
-      >
-        Вперед →
-      </button>
-    </div>-->
-
     <router-link class="pagination-btn text-center" :to="`/catalog`">Все товары</router-link>
 
     <!-- Баннер подписки -->
@@ -162,7 +130,6 @@ const authStore = useAuthStore();
 
 // Поиск и фильтры
 const searchQuery = ref('')
-const selectedCategory = ref('')
 const currentPage = ref(1)
 const productsPerPage = 9
 
@@ -182,8 +149,22 @@ const loadProducts = async () => {
   }
 };
 
+const loadCategories = async () => {
+  const result = await authStore.fetchCategories();
+  
+  if (!result.success) 
+  {
+    console.error('Ошибка загрузки:', result.error);
+  } 
+  else 
+  {
+    categories.value = result.categories;
+  }
+};
+
 onMounted(async () => {
   await loadProducts();
+  await loadCategories();
 });
 
 const filteredProducts = computed(() => {
@@ -218,10 +199,6 @@ const totalPages = computed(() => {
     const query = searchQuery.value.toLowerCase();
   }
   
-  if (selectedCategory.value && selectedCategory.value !== 'Все товары') {
-    total = total.filter(product => product.category === selectedCategory.value);
-  }
-  
   return Math.ceil(total.length / productsPerPage);
 });
 
@@ -247,7 +224,6 @@ const toggleFavorite = (productId) => {
 // Сброс фильтров
 const resetFilters = () => {
   searchQuery.value = '';
-  selectedCategory.value = '';
   currentPage.value = 1;
 };
 </script>

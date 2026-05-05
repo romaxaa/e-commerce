@@ -1,7 +1,7 @@
 <template>
   <div class="catalog-page">
     <div class="catalog-container">
-      <!-- Hero секция с поиском -->
+
       <section class="catalog-hero glass-panel">
         <h1>Каталог товаров</h1>
         <p>{{ productInfo.count }} товаров в нашем ассортименте</p>
@@ -9,17 +9,8 @@
         <!-- Глобальный поиск -->
         <div class="global-search">
           <div class="search-wrapper">
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              @input="handleSearch"
-              placeholder="Поиск товаров по названию, категории, бренду..."
-              class="search-input glass-input"
-              autocomplete="off"
-            >
-            <button class="search-btn" @click="handleSearch">
-              🔍 Найти
-            </button>
+            <input type="text" v-model="searchQuery" @input="handleSearch" placeholder="Поиск товаров по названию, категории, бренду..." class="search-input glass-input" autocomplete="off">
+            <button class="search-btn" @click="handleSearch">🔍 Найти</button>
           </div>
         </div>
       </section>
@@ -59,13 +50,7 @@
                 <span>-</span>
                 <input type="number" v-model="filters.priceMax" placeholder="до" class="price-input glass-input">
               </div>
-              <input 
-                type="range" 
-                v-model="filters.priceMin" 
-                :min="minPrice" 
-                :max="maxPrice" 
-                class="price-slider"
-              >
+              <input type="range" v-model="filters.priceMin" :min="minPrice" :max="maxPrice" class="price-slider">
             </div>
           </div>
 
@@ -163,15 +148,7 @@
               
               <div class="product-info">
                 <div class="product-category">{{ product.category_name }}</div>
-                <h3 class="product-title">{{ product.name }}</h3>
-                
-                <div class="product-rating">
-                  <span class="stars">
-                    <!--<span v-for="i in 5" :key="i" class="star" :class="{ active: i <= product.rating }">★</span>-->
-                    <span>★</span>
-                  </span>
-                  <span class="reviews">(234)</span>
-                </div>
+                <h3 class="product-title">{{ product.name }}</h3>             
                 
                 <div class="product-price">
                   <span class="current-price">{{ formatPrice(product.price) }} ₽</span>
@@ -183,7 +160,7 @@
                 </div>
                 
                 <div class="product-actions">
-                  <button class="cart-btn" @click.stop="addToCart(product)">
+                  <button class="cart-btn" @click.stop="addToCart(product.id)">
                     🛒 В корзину
                   </button>
                   <button class="quick-view-btn" @click.stop="" @click="goToProduct(product.url)">
@@ -218,6 +195,25 @@
             </div>
             <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">→</button>
           </div>-->
+
+          <!-- Пагинация -->
+          <div class="pagination" v-if="totalPages > 1">
+            <button 
+              class="pagination-btn" 
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            >
+              ← Назад
+            </button>
+            <span class="page-info">Страница {{ currentPage }} из {{ totalPages }}</span>
+            <button 
+              class="pagination-btn" 
+              :disabled="currentPage === totalPages"
+              @click="currentPage++"
+            >
+              Вперед →
+            </button>
+          </div>
         </main>
       </div>
     </div>
@@ -252,6 +248,10 @@ const sortBy = ref('default')
 const currentPage = ref(1)
 const productsPerPage = 12
 
+// Минимальная и максимальная цена
+const minPrice = ref(0)
+const maxPrice = ref(200000)
+
 // Фильтры
 const filters = ref({
   categories: [],
@@ -274,10 +274,6 @@ const openFilters = ref({
 const toggleFilter = (filter) => {
   openFilters.value[filter] = !openFilters.value[filter]
 }
-
-// Минимальная и максимальная цена
-const minPrice = ref(0)
-const maxPrice = ref(200000)
 
 const fetchProduct = async () => {  
   try 
@@ -322,7 +318,7 @@ const handleSearch = async () => {
   {
     isSearching.value = true;
     // Можно прокинуть сюда и фильтры, если нужно
-    const result = await authStore.searchProducts(searchQuery.value, filters.value.categories, filters.value.brands);
+    const result = await authStore.searchProducts(searchQuery.value, filters.value.categories, filters.value.brands, filters.value.price, filters.value.priceMin, filters.value.priceMax, filters.value.rating, filters.value.inStock);
     if(result.success)
     {
       searchResult.value = result.data;
@@ -331,27 +327,7 @@ const handleSearch = async () => {
     isSearching.value = false;
     searchResult.value = []; // Или верни исходный список товаров
   }
-}
-
-// Товары (моковые данные)
-/*const products = ref([
-  {
-    id: 1,
-    name: 'iPhone 15 Pro',
-    category: 'Смартфоны',
-    brand: 'Apple',
-    price: 89990,
-    oldprice: 119990,
-    discount: 25,
-    rating: 4.9,
-    reviews: 1247,
-    stock: 45,
-    isNew: true,
-    isFavorite: false,
-    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=300&h=300&fit=crop',
-    description: 'Титан. Прочный и легкий. Новый корпус из титана авиационного класса.'
-  }
-])*/
+};
 
 /*const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * productsPerPage
@@ -359,12 +335,12 @@ const handleSearch = async () => {
   return filteredProducts.value.slice(start, end)
 })*/
 
-/*const paginatedProducts = computed(() => {
+const paginatedProducts = computed(() => {
   return displayedProducts.value 
-})*/
+})
 
 // Видимые страницы для пагинации
-/*const visiblePages = computed(() => {
+const visiblePages = computed(() => {
   const pages = []
   const maxVisible = 5
   let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
@@ -378,7 +354,7 @@ const handleSearch = async () => {
     pages.push(i)
   }
   return pages
-})*/
+})
 
 /*const clearSearch = () => {
   searchQuery.value = ''
@@ -421,11 +397,6 @@ const addToCart = (product) => {
   alert(`${product.name} добавлен в корзину!`)
 }
 
-const buyNow = (product) => {
-  console.log('Купить сейчас:', product)
-  router.push('/checkout')
-}
-
 const goToProduct = (url) => {
   router.push(`/product/${url}`)
 }
@@ -465,6 +436,36 @@ onMounted(() => {
 .catalog-container {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+
+.page-info {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pagination-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  padding: 0.5rem 1.5rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* Hero секция */

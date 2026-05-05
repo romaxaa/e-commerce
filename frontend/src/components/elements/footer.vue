@@ -58,7 +58,6 @@
             <li><router-link to="/delivery">Доставка и оплата</router-link></li>
             <li><router-link to="/returns">Возврат товара</router-link></li>
             <li><router-link to="/warranty">Гарантия</router-link></li>
-            <li><router-link to="/faq">FAQ</router-link></li>
             <li><router-link to="/blog">Блог</router-link></li>
           </ul>
         </div>
@@ -113,10 +112,9 @@
       <!-- Нижняя часть -->
       <div class="footer-bottom">
         <div class="copyright">
-          © 2024 GlassShop. Все права защищены.
+          © 2026 GlassShop. Все права защищены.
         </div>
         <div class="payment-methods">
-          <span class="payment-icon">💳 Visa</span>
           <span class="payment-icon">💳 Mastercard</span>
           <span class="payment-icon">💳 МИР</span>
           <span class="payment-icon">📱 SBP</span>

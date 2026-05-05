@@ -43,14 +43,14 @@
         </router-link>
 
         <!-- Корзина -->
-        <button class="action-btn cart-btn" @click="toggleCart">
+        <router-link to="/cart" class="action-btn cart-btn" @click="toggleCart">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="9" cy="21" r="1"></circle>
             <circle cx="20" cy="21" r="1"></circle>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
           <span v-if="cartCount > 0" class="badge">{{ cartCount }}</span>
-        </button>
+        </router-link>
 
         <!-- Профиль / Авторизация -->
         <div v-if="authStore.isAuthenticated" class="profile-dropdown">
@@ -74,6 +74,10 @@
             </router-link>
             <div v-if="authStore.user && authStore.user.group == 99">
               <router-link to="/admin" class="dropdown-item">
+                <svg class="w-4 h-4 text-gray-300 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="m20.9532 11.7634-2.0523-2.05225-2.0523 2.05225 2.0523 2.0523 2.0523-2.0523Zm-1.3681-2.73651-4.1046-4.10457L12.06 8.3428l4.1046 4.1046 3.4205-3.42051Zm-4.1047 2.73651-2.7363-2.73638-8.20919 8.20918 2.73639 2.7364 8.2091-8.2092Z"/>
+                  <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="m12.9306 3.74083 1.8658 1.86571-2.0523 2.05229-1.5548-1.55476c-.995-.99505-3.23389-.49753-3.91799.18657l2.73639-2.73639c.6841-.68409 1.9901-.74628 2.9229.18658Z"/>
+                </svg>
                 Админ панель
               </router-link>
             </div>
@@ -159,7 +163,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 
 const authStore = useAuthStore();
 
@@ -172,9 +176,8 @@ const isSearchOpen = ref(false)
 const searchQuery = ref('')
 
 // Данные пользователя (заглушка)
-const userAvatar = ref('https://i.pravatar.cc/150?img=3')
-const cartCount = ref(0)
-const favoritesCount = ref(0)
+const cartCount = ref(10)
+const favoritesCount = ref(10)
 
 // Проверка активной ссылки
 const isActive = (path) => 

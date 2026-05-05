@@ -9,6 +9,13 @@ import ManageCategory from '../components/admin/manage-category.vue';
 import ProductView from '../components/product-view.vue';
 import notfound from '../components/notfound.vue';
 import about from '../components/about.vue';
+import cart from '../components/cart.vue';
+import favorites from '../components/favorites.vue';
+import delivery from '../components/static/delivery.vue';
+import returns from '../components/static/returns.vue';
+import warranty from '../components/static/warranty.vue';
+import privacy from '../components/static/privacy.vue';
+import terms from '../components/static/terms.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -71,6 +78,48 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: about,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/cart',
+      name: 'cart',
+      component: cart,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/favorites',
+      name: 'favorites',
+      component: favorites,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/delivery',
+      name: 'delivery',
+      component: delivery,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/returns',
+      name: 'returns',
+      component: returns,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/warranty',
+      name: 'warranty',
+      component: warranty,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/privacy',
+      name: 'privacy',
+      component: privacy,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: terms,
       meta: {guestOnly: false}
     }
   ]

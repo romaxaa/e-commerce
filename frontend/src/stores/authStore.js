@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import Profile from '../components/profile.vue';
 
 const router = useRouter();
 
@@ -329,26 +330,52 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async saveAddress(id, type, street, city, postalCode, office, isDefault)
+    async editPassword(current, new_pass, confirm)
     {
       const response = await axios.post('/api/json.php', {
-        type: 'save-adress',
-        id: id,
-        type: type,
-        street: street,
-        city: city,
-        postalCode: postalCode,
-        office: office,
-        isDefault: isDefault
+        type: 'edit-pass',
+        current: current,
+        new_pass: new_pass,
+        confirm: confirm 
       });
 
       if(response.data.result === "good")
       {
-        return { success: true };
+        return { success: true};
       }
       else
       {
         return { success: false, error: this.error };
+      }
+    },
+
+    async saveAddress(id, type, street, city, postalCode, office, isDefault)
+    {
+      try
+      {
+        const response = await axios.post('/api/json.php', {
+          type: 'save-address',
+          id: id,
+          type: type,
+          street: street,
+          city: city,
+          postalCode: postalCode,
+          office: office,
+          isDefault: isDefault
+        });
+
+        if(response.data.result === "good")
+        {
+          return { success: true };
+        }
+        else
+        {
+          return { success: false, error: this.error };
+        }
+      }
+      catch(error)
+      {
+        return { success: false, error: error.message };
       }
     },
 
@@ -508,7 +535,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async update_user_info(id, name, surname, email, phone, birthday, bio)
+    async update_user_info(id, name, surname, email, phone, birthday, bio, notifications, visible)
     {
 
       const response = await axios.post('/api/json.php', 
@@ -520,7 +547,9 @@ export const useAuthStore = defineStore('auth', {
             email: email,
             phone: phone,
             birthday: birthday,
-            bio: bio
+            bio: bio,
+            notifications: notifications,
+            visible: visible
         }
       );
 
