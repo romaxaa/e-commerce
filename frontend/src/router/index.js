@@ -16,6 +16,7 @@ import returns from '../components/static/returns.vue';
 import warranty from '../components/static/warranty.vue';
 import privacy from '../components/static/privacy.vue';
 import terms from '../components/static/terms.vue';
+import manageUsers from '../components/admin/manage-users.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -60,6 +61,12 @@ const router = createRouter({
       name: 'manage-product',
       component: Manageproduct,
       meta: {guestOnly: false}
+    },
+    {
+      path: '/manage-users',
+      name: 'manage-users',
+      component: manageUsers,
+      meta: {guestOnly:false}
     },
     {
       path: '/manage-category',

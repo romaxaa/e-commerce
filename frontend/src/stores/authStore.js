@@ -13,9 +13,6 @@ export const useAuthStore = defineStore('auth', {
     loading: false,
     error: null,
 
-    //переменные товаров
-    products: null,
-
     //переменные категорий
     categories: null
   }),
@@ -379,6 +376,68 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async addToCart(id)
+    {
+      /*if(useAuthStore.user != null)
+      {*/
+        const response = await axios.post('/api/json.php', {
+          type: 'add-to-cart',
+          id: id
+        });
+
+        if(response.data.result === "good")
+        {
+          return { success: true };
+        }
+        else
+        {
+          return { success: false, error: this.error };
+        }
+      /*}
+      else
+      {
+        console.log('no auth');
+      }*/
+    },
+
+    async fetchCart()
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'fetch-cart'
+      });
+
+      if(response.data.result == 'good')
+      {
+        return { success: true, products: response.data.products };
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+
+      if(response.data.result == 'empty')
+      {
+        return { success: true, empty: true };
+      }
+    },
+
+    async removeCart(id)
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'remove-cart-product',
+        id: id
+      });
+
+      if(response.data.result == 'good')
+      {
+        return { success: true };
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+    },
+
     async fetchProducts()
     {
       try
@@ -533,6 +592,48 @@ export const useAuthStore = defineStore('auth', {
       {
         this.isLoaded = true;
       }
+    },
+
+    async fetchUsers()
+    {
+      const response = await axios.post('/api/json.php',
+      {
+        type: 'fetch-users'
+      }
+      );
+
+      if(response.data.result === 'good')
+      {
+        return { success: true, data: response.data.data };
+      }
+      else
+      {
+        // Если сервер вернул ошибку
+        const errorMessage = response.data.message || 'Ошибка обновления профиля';
+        this.error = errorMessage;
+        return { success: false, error: errorMessage };
+      }
+    },
+
+    async deleteUser(id)
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'delete-user',
+        id: id
+      });
+
+      if(response.data.result === 'good')
+      {
+        return { success: true };
+      }
+      else
+      {
+        // Если сервер вернул ошибку
+        const errorMessage = response.data.message || 'Ошибка обновления профиля';
+        this.error = errorMessage;
+        return { success: false, error: errorMessage };
+      }
+
     },
 
     async update_user_info(id, name, surname, email, phone, birthday, bio, notifications, visible)

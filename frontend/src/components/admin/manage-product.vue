@@ -62,7 +62,7 @@
               </div>
               <div class="form-group">
                 <label>Старая цена (₽)</label>
-                <input type="number" v-model="productForm.oldPrice" class="glass-input">
+                <input type="number" v-model="productForm.oldprice" class="glass-input">
               </div>
               <div class="form-group">
                 <label>Остаток</label>
@@ -72,12 +72,57 @@
 
             <div class="form-group">
               <label>Описание</label>
-              <textarea v-model="productForm.description" rows="3" class="glass-input"></textarea>
+              <textarea v-model="productForm.subtitle" rows="3" class="glass-input"></textarea>
             </div>
 
             <div class="form-group">
               <label>URL изображения</label>
-              <input type="url" v-model="productForm.image" class="glass-input">
+              <input type="url" v-model="productForm.img" class="glass-input">
+            </div>
+
+            <!-- Блок характеристик (JSON) -->
+            <div class="form-group">
+              <label>Характеристики товара (JSON)</label>
+              
+              <!-- Кнопки быстрых шаблонов -->
+              <div class="spec-presets">
+                <button 
+                  type="button" 
+                  class="preset-btn" 
+                  v-for="preset in specPresets" 
+                  :key="preset.name"
+                  @click="applyPreset(preset)"
+                >
+                  {{ preset.name }}
+                </button>
+                <button type="button" class="preset-btn add-spec" @click="addSpecField">+ Добавить поле</button>
+              </div>
+
+              <!-- Динамические поля характеристик -->
+              <div class="spec-fields">
+                <div v-for="(spec, index) in specFields" :key="index" class="spec-row">
+                  <input 
+                    type="text" 
+                    v-model="spec.key" 
+                    placeholder="Название (например: Процессор)" 
+                    class="spec-input glass-input"
+                  >
+                  <input 
+                    type="text" 
+                    v-model="spec.value" 
+                    placeholder="Значение (например: Apple A17 Pro)" 
+                    class="spec-input glass-input"
+                  >
+                  <button type="button" class="remove-spec" @click="removeSpecField(index)">🗑️</button>
+                </div>
+              </div>
+
+              <!-- Предпросмотр JSON -->
+              <details class="json-preview">
+                <summary>📋 Показать JSON</summary>
+                <pre class="json-code">{{ formattedSpecJSON }}</pre>
+                <button type="button" class="copy-json" @click="copyJSON">📋 Копировать JSON</button>
+              </details>
             </div>
 
             <div class="form-row">
@@ -149,7 +194,7 @@ const productForm = ref
   isPopular: false
 })
 
-const products = computed(() => authStore.products);
+const products = ref([]);
 const categories = computed(() => authStore.categories)
 //const productsLoading = computed(() => authStore.productsLoading);
 //const productsError = computed(() => authStore.productsError);
@@ -173,7 +218,7 @@ const loadProducts = async () => {
   
   if (result.success) 
   {
-    console.log('Товары загружены');
+    products.value = result.data;
   }
   else 
   {
@@ -200,6 +245,12 @@ const editProduct = (product) => {
 
 const saveProduct = async () => {
   let result;
+
+  const productData = {
+    ...productForm.value,
+    specifications: getSpecificationsJSON()  // JSON для отправки на сервер
+  }
+  console.log('Отправляемые данные:', productData)
   
   if(isEditing.value)
   {
@@ -245,9 +296,212 @@ const deleteProduct = async (id) => {
   }
 }
 
+// Характеристики (JSON)
+const specFields = ref([
+  { key: '', value: '' }
+])
+
+// Шаблоны характеристик по категориям
+const specPresets = [
+  { 
+    name: '📱 Смартфон', 
+    fields: [
+      { key: 'Процессор', value: '' },
+      { key: 'Оперативная память', value: '' },
+      { key: 'Встроенная память', value: '' },
+      { key: 'Экран', value: '' },
+      { key: 'Камера', value: '' },
+      { key: 'Аккумулятор', value: '' },
+      { key: 'ОС', value: '' }
+    ]
+  },
+  { 
+    name: '💻 Ноутбук', 
+    fields: [
+      { key: 'Процессор', value: '' },
+      { key: 'Оперативная память', value: '' },
+      { key: 'SSD', value: '' },
+      { key: 'Экран', value: '' },
+      { key: 'Видеокарта', value: '' },
+      { key: 'ОС', value: '' },
+      { key: 'Вес', value: '' }
+    ]
+  },
+  { 
+    name: '🎧 Наушники', 
+    fields: [
+      { key: 'Тип', value: '' },
+      { key: 'Шумоподавление', value: '' },
+      { key: 'Время работы', value: '' },
+      { key: 'Bluetooth', value: '' },
+      { key: 'Вес', value: '' }
+    ]
+  },
+  { 
+    name: '⌚ Часы', 
+    fields: [
+      { key: 'Диаметр', value: '' },
+      { key: 'ОС', value: '' },
+      { key: 'Защита', value: '' },
+      { key: 'GPS', value: '' },
+      { key: 'Пульсометр', value: '' }
+    ]
+  }
+]
+
+// Форматированный JSON для предпросмотра
+const formattedSpecJSON = computed(() => {
+  const obj = {}
+  specFields.value.forEach(spec => {
+    if (spec.key && spec.key.trim()) {
+      obj[spec.key.trim()] = spec.value || ''
+    }
+  })
+  return JSON.stringify(obj, null, 2)
+})
+
+// Добавить поле характеристики
+const addSpecField = () => {
+  specFields.value.push({ key: '', value: '' })
+}
+
+// Удалить поле характеристики
+const removeSpecField = (index) => {
+  specFields.value.splice(index, 1)
+}
+
+// Применить шаблон
+const applyPreset = (preset) => {
+  specFields.value = preset.fields.map(f => ({ ...f }))
+}
+
+// Копировать JSON в буфер
+const copyJSON = async () => {
+  try {
+    await navigator.clipboard.writeText(formattedSpecJSON.value)
+    alert('JSON скопирован в буфер обмена!')
+  } catch (err) {
+    console.error('Ошибка копирования:', err)
+  }
+}
+
+// При редактировании товара преобразуем JSON из БД в поля
+const loadSpecsFromDB = (specifications) => {
+  if (specifications && typeof specifications === 'object' && Object.keys(specifications).length > 0) {
+    specFields.value = Object.entries(specifications).map(([key, value]) => ({
+      key,
+      value: value || ''
+    }))
+  } else {
+    specFields.value = [{ key: '', value: '' }]
+  }
+}
+
+// При сохранении получаем JSON объект
+const getSpecificationsJSON = () => {
+  const obj = {}
+  specFields.value.forEach(spec => {
+    if (spec.key && spec.key.trim()) {
+      obj[spec.key.trim()] = spec.value || ''
+    }
+  })
+  return obj
+}
+
 </script>
 
 <style scoped>
+/* Стили для характеристик */
+.spec-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.preset-btn {
+  padding: 0.3rem 0.8rem;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 30px;
+  color: #60a5fa;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-btn:hover {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+.preset-btn.add-spec {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.spec-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.spec-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.spec-input {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.remove-spec {
+  width: 32px;
+  height: 32px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.json-preview {
+  margin-top: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.json-preview summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+}
+
+.json-code {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 0.7rem;
+  font-family: monospace;
+  overflow-x: auto;
+  color: #4ade80;
+}
+
+.copy-json {
+  margin-top: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  color: white;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
 .admin-products {
   padding: 1rem 0;
 }

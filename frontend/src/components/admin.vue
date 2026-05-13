@@ -28,7 +28,7 @@
             <span class="nav-icon">🚚</span>
             <span class="nav-label">Заказы</span>
           </router-link>
-          <router-link to="/admin/users" class="nav-item" :class="{ active: $route.path === '/admin/users' }">
+          <router-link to="/manage-users" class="nav-item" :class="{ active: $route.path === '/admin/users' }">
             <span class="nav-icon">👥</span>
             <span class="nav-label">Пользователи</span>
           </router-link>

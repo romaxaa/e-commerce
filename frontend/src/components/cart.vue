@@ -5,7 +5,7 @@
       <h1 class="cart-title">Корзина</h1>
       
       <!-- Пустая корзина -->
-      <div v-if="cartItems.length === 0" class="empty-cart glass-panel">
+      <div v-if="cartProducts.length === 0" class="empty-cart glass-panel">
         <div class="empty-cart-icon">🛒</div>
         <h2>Ваша корзина пуста</h2>
         <p>Похоже, вы еще не добавили ни одного товара в корзину</p>
@@ -27,31 +27,31 @@
               <div class="header-actions"></div>
             </div>
 
-            <div v-for="item in cartItems" :key="item.id" class="cart-item">
+            <div v-for="item in cartProducts" :key="item.id" class="cart-item">
               <div class="item-product">
-                <img :src="item.image" :alt="item.name" class="item-image">
+                <img :src="item.img" :alt="item.name" class="item-image">
                 <div class="item-info">
-                  <h3>{{ item.name }}</h3>
-                  <p class="item-category">{{ item.category }}</p>
+                  <h3>{{ item.product_name }}</h3>
+                  <p class="item-category">{{ item.category_name }}</p>
                   <div class="item-actions-mobile">
                     <div class="mobile-quantity">
                       <button @click="decrementQuantity(item)" :disabled="item.quantity <= 1">-</button>
                       <span>{{ item.quantity }}</span>
                       <button @click="incrementQuantity(item)" :disabled="item.quantity >= item.stock">+</button>
                     </div>
-                    <button class="remove-mobile" @click="removeItem(item.id)">🗑️</button>
+                    <button class="remove-mobile" @click="removeItem(item.product_id)">🗑️</button>
                   </div>
                 </div>
               </div>
-              <div class="item-price">{{ formatPrice(item.price) }} ₽</div>
+              <div class="item-price">{{ formatPrice(item.product_price) }} ₽</div>
               <div class="item-quantity">
-                <button @click="decrementQuantity(item)" :disabled="item.quantity <= 1">-</button>
-                <span>{{ item.quantity }}</span>
-                <button @click="incrementQuantity(item)" :disabled="item.quantity >= item.stock">+</button>
+                <button @click="decrementQuantity(item)" :disabled="item.count <= 1">-</button>
+                <span>{{ item.count }}</span>
+                <button @click="incrementQuantity(item)" :disabled="item.count >= 100 /*item.stock*/">+</button>
               </div>
-              <div class="item-total">{{ formatPrice(item.price * item.quantity) }} ₽</div>
+              <div class="item-total">{{ formatPrice(item.product_price * item.count) }} ₽</div>
               <div class="item-actions">
-                <button class="remove-btn" @click="removeItem(item.id)" title="Удалить">
+                <button class="remove-btn" @click="removeItem(item.product_id)" title="Удалить">
                   🗑️
                 </button>
               </div>
@@ -132,7 +132,7 @@
       <div v-if="showRemoveModal" class="modal-overlay" @click.self="showRemoveModal = false">
         <div class="modal-content glass-panel">
           <h3>Удалить товар?</h3>
-          <p>Вы уверены, что хотите удалить "{{ itemToRemove?.name }}" из корзины?</p>
+          <p>Вы уверены, что хотите удалить товар из корзины?</p>
           <div class="modal-actions">
             <button class="cancel-btn" @click="showRemoveModal = false">Отмена</button>
             <button class="confirm-btn" @click="confirmRemove">Удалить</button>
@@ -146,6 +146,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/authStore';
+import { useAlertStore } from '../stores/alertStore';
+
+const authStore = useAuthStore();
+const alerts = useAlertStore();
 
 const router = useRouter()
 
@@ -154,7 +159,8 @@ const cartItems = ref([])
 const promoCode = ref('')
 const appliedPromo = ref(null)
 const showRemoveModal = ref(false)
-const itemToRemove = ref(null)
+const cartProducts = ref([])
+const removeId = ref();
 
 // Настройки
 const freeShippingThreshold = 5000
@@ -162,11 +168,11 @@ const shippingCost = 500
 
 // Вычисляемые значения
 const totalItems = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + item.quantity, 0)
+  return cartProducts.value.reduce((sum, item) => sum + item.quantity, 0)
 })
 
 const subtotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  return cartProducts.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 })
 
 const discount = computed(() => {
@@ -184,6 +190,26 @@ const total = computed(() => {
   const shipping = subtotal.value >= freeShippingThreshold ? 0 : shippingCost
   return subtotal.value - discount.value + shipping
 })
+
+const fetchCart = async () => {
+  const result = await authStore.fetchCart();
+
+  if(result.success)
+  {
+    cartProducts.value = result.products;
+  }
+  
+  if(result.empty)
+  {
+    alerts.show('у вас пустая корзина!', 'warning');
+  }
+
+  if(!result.success)
+  {
+    console.log(result.error);
+  }
+
+};
 
 // Рекомендуемые товары (моковые данные)
 const recommendedProducts = ref([
@@ -234,26 +260,32 @@ const decrementQuantity = (item) => {
 }
 
 // Удаление товара
-const removeItem = (id) => {
-  const item = cartItems.value.find(i => i.id === id)
-  itemToRemove.value = item
+const removeItem = async (product_id) => {
+  removeId.value = product_id
   showRemoveModal.value = true
 }
 
-const confirmRemove = () => {
-  cartItems.value = cartItems.value.filter(item => item.id !== itemToRemove.value.id)
-  saveCart()
-  showRemoveModal.value = false
-  itemToRemove.value = null
+const confirmRemove = async () => {
+  const result = await authStore.removeCart(removeId.value);
+
+  if(result.success)
+  {
+    await fetchCart();
+    showRemoveModal.value = false
+    alerts.show('Товар успешно удален!', 'success');
+  }
+
 }
 
 // Добавление товара в корзину
 const addToCart = (product) => {
   const existingItem = cartItems.value.find(item => item.id === product.id)
   
-  if (existingItem) {
+  if (existingItem) 
+  {
     existingItem.quantity++
-  } else {
+  } else 
+  {
     cartItems.value.push({
       ...product,
       quantity: 1
@@ -290,9 +322,12 @@ const saveCart = () => {
 // Загрузка корзины из localStorage
 const loadCart = () => {
   const savedCart = localStorage.getItem('cart')
-  if (savedCart) {
+  if (savedCart) 
+  {
     cartItems.value = JSON.parse(savedCart)
-  } else {
+  } 
+  else 
+  {
     // Моковые данные для примера
     cartItems.value = [
       {
@@ -318,7 +353,8 @@ const loadCart = () => {
 }
 
 onMounted(() => {
-  loadCart()
+  loadCart();
+  fetchCart();
 })
 </script>
 

@@ -125,7 +125,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
+import { useAlertStore } from '../stores/alertStore';
 
+
+const alerts = useAlertStore();
 const authStore = useAuthStore();
 
 // Поиск и фильтры
@@ -159,6 +162,20 @@ const loadCategories = async () => {
   else 
   {
     categories.value = result.categories;
+  }
+};
+
+// Добавить в корзину
+const addToCart = async (product) => {
+  const result = await authStore.addToCart(product.id);
+
+  if(result.success)
+  {
+    alerts.show('Товар добавлен в корзину!', 'success');
+  }
+  else
+  {
+    alerts.show('Произошла ошибка!', 'error');
   }
 };
 
@@ -205,11 +222,6 @@ const totalPages = computed(() => {
 // Форматирование цены
 const formatPrice = (price) => {
   return price.toLocaleString('ru-RU');
-};
-
-// Добавить в корзину
-const addToCart = (product) => {
-  console.log('Добавлено в корзину:', product);
 };
 
 // Избранное
