@@ -698,9 +698,6 @@ switch ($action)
     break 1;
 
     case 'update-user-info':
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
 
         if(empty($_SESSION['logged_user']))
         {
@@ -712,66 +709,121 @@ switch ($action)
 
 
 
-        if(isset($data['id']) && isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
+        //if(isset($data['id']) && isset($data['name']) && isset($data['surname']) && isset($data['email']) && isset($data['phone']) && isset($data['birthday']) && isset($data['bio']))
+        if(isset($data['id']))
         {
-            if(R::count('users', "username = ? AND id != ?", [$data['username'], $currentUser->id]) > 0)
+            if(!empty($data['username']))
             {
-                echo json_encode(['result' => 'username']);
-                return;
+                if(R::count('users', "username = ? AND id != ?", [$data['username'], $currentUser->id]) > 0)
+                {
+                    echo json_encode(['result' => 'username']);
+                    return;
+                }
             }
-            if(R::count('users', "email = ? AND id != ?", [$data['email'], $currentUser->id]) > 0)
+            if(!empty($data['email']))
             {
-                echo json_encode(['result' => 'email']);
-                return;
+                if(R::count('users', "email = ? AND id != ?", [$data['email'], $currentUser->id]) > 0)
+                {
+                    echo json_encode(['result' => 'email']);
+                    return;
+                }
             }
 
-            if(iconv_strlen($data['name']) < 2 || iconv_strlen($data['surname']) < 2)
+            if(!empty($data['name']) && !empty($data['surname']))
             {
-                echo json_encode(['result' => 'minnames']);
-                return;
+                if(iconv_strlen($data['name']) < 2 || iconv_strlen($data['surname']) < 2)
+                {
+                    echo json_encode(['result' => 'minnames']);
+                    return;
+                }
             }
 
             $updated = false;
 
             if(!empty($data['username']))
             {
-                R::exec('UPDATE users SET username = ? WHERE id = ?', htmlspecialchars($data['username'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET username = ? WHERE id = ?', [
+                    htmlspecialchars($data['username'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
+
             if(!empty($data['name']))
             {
-                R::exec('UPDATE users SET name = ? WHERE id = ?', htmlspecialchars($data['name'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET name = ? WHERE id = ?', [
+                    htmlspecialchars($data['name'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
+
             if(!empty($data['surname']))
             {
-                R::exec('UPDATE users SET surname = ? WHERE id = ?', htmlspecialchars($data['surname'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET surname = ? WHERE id = ?', [
+                    htmlspecialchars($data['surname'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
+
             if(!empty($data['email']))
             {
-                R::exec('UPDATE users SET email = ? WHERE id = ?', htmlspecialchars($data['email'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET email = ? WHERE id = ?', [
+                    htmlspecialchars($data['email'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
+
             if(!empty($data['phone']))
             {
-                R::exec('UPDATE users SET phone = ? WHERE id = ?', htmlspecialchars($data['phone'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET phone = ? WHERE id = ?', [
+                    htmlspecialchars($data['phone'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
+
             if(!empty($data['birthday']))
             {
-                R::exec('UPDATE users SET birthday = ? WHERE id = ?', htmlspecialchars($data['birthday'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET birthday = ? WHERE id = ?', [
+                    htmlspecialchars($data['birthday'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
+
             if(!empty($data['bio']))
             {
-                R::exec('UPDATE users SET bio = ? WHERE id = ?', htmlspecialchars($data['bio'], ENT_QUOTES), $data['id']);
+                R::exec('UPDATE users SET bio = ? WHERE id = ?', [
+                    htmlspecialchars($data['bio'], ENT_QUOTES), 
+                    $data['id']
+                ]);
+                $updated = true;
+            }
+
+            if(!empty($data['notifications']))
+            {
+                R::exec('UPDATE users SET notifications = ? WHERE id = ?', [
+                    htmlspecialchars($data['notifications'], ENT_QUOTES), 
+                    $data['id']
+                ]);
+                $updated = true;
+            }
+
+            if(!empty($data['visible']))
+            {
+                R::exec('UPDATE users SET visible = ? WHERE id = ?', [
+                    htmlspecialchars($data['visible'], ENT_QUOTES), 
+                    $data['id']
+                ]);
                 $updated = true;
             }
 
             if($updated == true)
             {
-                echo json_encode(['result' => 'update']);
+                echo json_encode(['result' => 'good']);
                 return;
             }
             else
@@ -779,6 +831,169 @@ switch ($action)
                 echo json_encode(['result' => 'not-update']);
                 return;
             }
+        }
+    break 1;
+
+    case 'add-to-cart':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+
+        if(empty($data['count']))
+        {
+            $count = 1;
+        }
+        else
+        {
+            $count = $data['count'];
+        }
+
+        $cart = R::dispense('cart');
+        $cart->user_id = $_SESSION['logged_user']->id;
+        $cart->product_id = htmlspecialchars($data['id'], ENT_QUOTES);
+        $cart->count = $count;
+        $id = R::store($cart);
+
+        echo json_encode(['result' => 'good']);
+        return;
+    break 1;
+
+    case 'fetch-cart':
+        $cart = R::getall('SELECT c.user_id, c.count, c.product_id, p.price as product_price, p.name as product_name, p.stock as product_stock, p.img, cat.name as category_name FROM cart c INNER JOIN products p ON c.product_id = p.id INNER JOIN category cat ON p.category_id = cat.id');
+
+        if(!empty($cart))
+        {
+            echo json_encode(['result' => 'good', 'products' => $cart]);
+            return;
+        }
+        else
+        {
+            echo json_encode(['result' => 'empty']);
+            return;
+        }
+    break 1;
+
+    case 'apply-promocode':
+        if(!isset($data['promocode']))
+        {
+            echo json_encode(['result' => 'no_data']);
+            return;
+        }
+
+        $promocodes = R::getrow('SELECT discount FROM promocodes WHERE promocode = ?', [$data['promocode']]);
+    break 1;
+
+    case 'checkout':
+        if(!isset($data['totalItems']))
+        {
+            echo json_encode(['result' => 'empty_items', 'message' => 'You need pick more products']);
+            return;
+        }
+
+        if(!isset($data['totalSum']))
+        {
+            $data['totalSum'] = $totalSumFrontend;
+            $totalSumFrontend = 0;
+        }
+        else
+        {
+            $data['totalSum'] = $totalSumFrontend;
+        }
+
+        $checkCart = R::getAll('SELECT c.user_id, c.product_id, c.count, p.price FROM cart c INNER JOIN products p ON c.product_id = p.id WHERE c.user_id = ?', [$_SESSION['logged_user']->id]);
+
+        if(!empty($checkCart))
+        {
+            $totalSum = 0;
+            foreach($checkCart as $item)
+            {
+                $totalSum += $item['price'] * $data['totalItems'];
+            }
+        }
+        else
+        {
+            echo json_encode(['result' => 'empty_cart']);
+            return;
+        }
+
+        if(isset($totalSum) && isset($totalSumFrontend))
+        {
+            if($totalSum == $totalSumFrontend)
+            {
+                $userAdress = R::getrow();
+
+                $order = R::dispense('orders');
+                $order->user_id = htmlspecialchars((int)$_SESSION['logged_user']->id);
+                $order->total_price = htmlspecialchars((int)$totalSum);
+                $order->status = 'paid';
+                $order->adress_id = 'asdad';
+            }
+            else
+            {
+                echo json_encode(['result' => 'no_match', 'totalSum' => $totalSum]);
+                return;
+            }
+        }
+    break 1;
+
+    case 'remove-cart-product':
+        if(isset($data['id']))
+        {
+            $delete = R::exec('DELETE FROM `cart` WHERE product_id = ?', [$data['id']]);
+
+            if($delete)
+            {
+                echo json_encode(['result' => 'good']);
+                return;
+            }
+        }
+        else
+        {
+            echo json_encode(['result' => 'no_data', 'message' => 'No data']);
+            return;
+        }
+    break 1;
+
+    case 'fetch-users':
+        $users = R::getall('SELECT * FROM users');
+
+        if($users)
+        {
+            echo json_encode(['result' => 'good', 'data' => $users]);
+            return;
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad']);
+            return; 
+        }
+    break 1;
+
+    case 'delete-user':
+        if(empty($_SESSION['logged_user']) || $_SESSION['logged_user']->group != 99)
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+        if($data['id'] == $_SESSION['logged_user']->id)
+        {
+            echo json_encode(['result'=> 'id_much']);
+            return;
+        }
+        
+        $update = R::exec('DELETE FROM `users` WHERE id = ?', [$data['id']]);
+        
+        if($update)
+        {
+            echo json_encode(['result' => 'good']);
+            return;
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad']);
+            return;
         }
     break 1;
 
@@ -823,8 +1038,10 @@ switch ($action)
         }
     break 1;
 
-    case 'save-adress':
-        if(empty($_SESSION['logged_user']))
+    case 'save-address':
+        echo json_decode(['result' => 'bad', 'message' => 'нет данных']);
+        return;
+        /*if(empty($_SESSION['logged_user']))
         {
             echo json_encode(['result' => 'auth']);
             return;
@@ -868,6 +1085,52 @@ switch ($action)
                 echo json_encode(['result' => 'bad']);
                 return;
             }
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad', 'message' => 'данные не приходят']);
+            return;
+        }*/
+    break 1;
+
+    case 'edit-pass':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+
+        if(isset($data['current']) && isset($data['new_pass']) && isset($data['confirm']))
+        {
+            if($data['new_pass'] != $data['confirm'])
+            {
+                echo json_encode(['result' => 'confirm_pass_not_much']);
+                return;
+            }
+
+            $pass = R::getCell('SELECT password FROM users WHERE id = ?', [$_SESSION['logged_user']->id]);
+
+            if($pass)
+            {
+                if(password_verify($data['current'], $pass))
+                {
+                    $hash = password_hash($data['new_pass'], PASSWORD_DEFAULT);
+                    R::exec('UPDATE users SET password = ? WHERE id = ?', [$hash, $_SESSION['logged_user']->id]);
+
+                    echo json_encode(['result' => 'good']);
+                    return;
+                }
+                else
+                {
+                    echo json_encode(['result' => 'pass_not_much']);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            echo json_encode(['result' => 'bad', 'message' => 'no data']);
+            return;
         }
     break 1;
 
