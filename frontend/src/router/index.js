@@ -17,6 +17,7 @@ import warranty from '../components/static/warranty.vue';
 import privacy from '../components/static/privacy.vue';
 import terms from '../components/static/terms.vue';
 import manageUsers from '../components/admin/manage-users.vue';
+import checkout from '../components/checkout.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -127,6 +128,12 @@ const router = createRouter({
       path: '/terms',
       name: 'terms',
       component: terms,
+      meta: {guestOnly: false}
+    },
+    {
+      path: '/checkout',
+      name: 'checkout',
+      component: checkout,
       meta: {guestOnly: false}
     }
   ]

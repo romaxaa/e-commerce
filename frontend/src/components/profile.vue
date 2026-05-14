@@ -344,7 +344,7 @@ const updateProfile = async () => {
 }
 
 const saveAddress = async () => {
-  const result = await authStore.saveAddress(authStore.user.id, addressForm.type, addressForm.street, addressForm.city, addressForm.postalCode, addressForm.office, addressForm.isDefault);
+  const result = await authStore.saveAddress(addressForm.type, addressForm.street, addressForm.city, addressForm.postalCode, addressForm.office, addressForm.isDefault);
 
   if(result.success)
   {

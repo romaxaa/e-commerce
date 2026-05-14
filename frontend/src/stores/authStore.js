@@ -346,13 +346,12 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async saveAddress(id, type, street, city, postalCode, office, isDefault)
+    async saveAddress(type, street, city, postalCode, office, isDefault)
     {
       try
       {
         const response = await axios.post('/api/json.php', {
           type: 'save-address',
-          id: id,
           type: type,
           street: street,
           city: city,
@@ -421,6 +420,23 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async applyPromo(promocode)
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'apply-promocode',
+        promocode: promocode
+      });
+
+      if(response.data.result == 'good')
+      {
+        return { success: true };
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+    },
+
     async removeCart(id)
     {
       const response = await axios.post('/api/json.php', {
@@ -429,6 +445,20 @@ export const useAuthStore = defineStore('auth', {
       });
 
       if(response.data.result == 'good')
+      {
+        return { success: true };
+      }
+      else
+      {
+        return { success: false, error: this.error };
+      }
+    },
+
+    async Checkout(totalSum, totalItems)
+    {
+      const response = await axios.post('/api/json.php', {type: 'checkout', totalSum: totalSum, totalItems: totalItems});
+
+      if(response.data.result == "good")
       {
         return { success: true };
       }

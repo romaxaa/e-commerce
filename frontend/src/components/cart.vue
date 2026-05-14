@@ -35,9 +35,9 @@
                   <p class="item-category">{{ item.category_name }}</p>
                   <div class="item-actions-mobile">
                     <div class="mobile-quantity">
-                      <button @click="decrementQuantity(item)" :disabled="item.quantity <= 1">-</button>
-                      <span>{{ item.quantity }}</span>
-                      <button @click="incrementQuantity(item)" :disabled="item.quantity >= item.stock">+</button>
+                      <button @click="decrementQuantity(item)" :disabled="item.count <= 1">-</button>
+                      <span>{{ item.count }}</span>
+                      <button @click="incrementQuantity(item)" :disabled="item.count >= item.product_stock">+</button>
                     </div>
                     <button class="remove-mobile" @click="removeItem(item.product_id)">🗑️</button>
                   </div>
@@ -47,7 +47,7 @@
               <div class="item-quantity">
                 <button @click="decrementQuantity(item)" :disabled="item.count <= 1">-</button>
                 <span>{{ item.count }}</span>
-                <button @click="incrementQuantity(item)" :disabled="item.count >= 100 /*item.stock*/">+</button>
+                <button @click="incrementQuantity(item)" :disabled="item.count >= item.product_stock /*item.stock*/">+</button>
               </div>
               <div class="item-total">{{ formatPrice(item.product_price * item.count) }} ₽</div>
               <div class="item-actions">
@@ -105,16 +105,6 @@
               <p>Добавьте товаров на {{ formatPrice(freeShippingThreshold - subtotal) }} ₽ для бесплатной доставки</p>
             </div>
             
-            <div class="promo-code">
-              <input 
-                type="text" 
-                v-model="promoCode" 
-                placeholder="Промокод" 
-                class="promo-input glass-input"
-              >
-              <button class="apply-btn" @click="applyPromo">Применить</button>
-            </div>
-            
             <button class="checkout-btn" @click="checkout">
               Оформить заказ → 
             </button>
@@ -168,11 +158,11 @@ const shippingCost = 500
 
 // Вычисляемые значения
 const totalItems = computed(() => {
-  return cartProducts.value.reduce((sum, item) => sum + item.quantity, 0)
+  return cartProducts.value.reduce((sum, item) => sum + item.count, 0)
 })
 
 const subtotal = computed(() => {
-  return cartProducts.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  return cartProducts.value.reduce((sum, item) => sum + (item.product_price * item.count), 0)
 })
 
 const discount = computed(() => {
@@ -211,6 +201,15 @@ const fetchCart = async () => {
 
 };
 
+/*const checkout = async () => {
+  const result = await authStore.Checkout(total, totalItems);
+
+  if(result.success)
+  {
+    alerts.show('Заказ успешно оформлен!', 'success');
+  }
+}*/
+
 // Рекомендуемые товары (моковые данные)
 const recommendedProducts = ref([
   {
@@ -246,15 +245,15 @@ const formatPrice = (price) => {
 
 // Управление количеством
 const incrementQuantity = (item) => {
-  if (item.quantity < item.stock) {
-    item.quantity++
+  if (item.count < item.product_stock) {
+    item.count++
     saveCart()
   }
 }
 
 const decrementQuantity = (item) => {
-  if (item.quantity > 1) {
-    item.quantity--
+  if (item.count > 1) {
+    item.count--
     saveCart()
   }
 }
@@ -295,20 +294,6 @@ const addToCart = (product) => {
   saveCart()
 }
 
-// Применение промокода
-const applyPromo = () => {
-  if (promoCode.value.toLowerCase() === 'welcome10') {
-    appliedPromo.value = { code: 'welcome10', discount: 10 }
-    alert('Промокод применен! Скидка 10%')
-  } else if (promoCode.value.toLowerCase() === 'freeShipping') {
-    // Бесплатная доставка уже учитывается
-    alert('Промокод применен! Бесплатная доставка')
-  } else {
-    alert('Неверный промокод')
-  }
-  promoCode.value = ''
-}
-
 // Оформление заказа
 const checkout = () => {
   router.push('/checkout')
@@ -319,41 +304,7 @@ const saveCart = () => {
   localStorage.setItem('cart', JSON.stringify(cartItems.value))
 }
 
-// Загрузка корзины из localStorage
-const loadCart = () => {
-  const savedCart = localStorage.getItem('cart')
-  if (savedCart) 
-  {
-    cartItems.value = JSON.parse(savedCart)
-  } 
-  else 
-  {
-    // Моковые данные для примера
-    cartItems.value = [
-      {
-        id: 1,
-        name: 'iPhone 15 Pro',
-        category: 'Смартфоны',
-        price: 89990,
-        quantity: 1,
-        stock: 45,
-        image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=150&h=150&fit=crop'
-      },
-      {
-        id: 4,
-        name: 'Sony WH-1000XM5',
-        category: 'Наушники',
-        price: 24990,
-        quantity: 2,
-        stock: 67,
-        image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=150&h=150&fit=crop'
-      }
-    ]
-  }
-}
-
 onMounted(() => {
-  loadCart();
   fetchCart();
 })
 </script>
