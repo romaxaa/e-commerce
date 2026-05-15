@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => '__root__',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '1f20c058fa589a32d93fc70f63a0d25ece98a2d9',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         '__root__' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '1f20c058fa589a32d93fc70f63a0d25ece98a2d9',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -73,6 +73,33 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'paragonie/constant_time_encoding' => array(
+            'pretty_version' => 'v3.1.3',
+            'version' => '3.1.3.0',
+            'reference' => 'd5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../paragonie/constant_time_encoding',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'paragonie/random_compat' => array(
+            'pretty_version' => 'v9.99.100',
+            'version' => '9.99.100.0',
+            'reference' => '996434e5492cb4c3edcb9168db6fbb1359ef965a',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../paragonie/random_compat',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'php-amqplib/php-amqplib' => array(
+            'pretty_version' => 'v3.7.4',
+            'version' => '3.7.4.0',
+            'reference' => '381b6f7c600e0e0c7463cdd7f7a1a3bc6268e5fd',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../php-amqplib/php-amqplib',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'php-http/async-client-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
@@ -91,6 +118,15 @@
             'reference' => '82fe4c73ef3363caed49ff8dd1539ba06044910d',
             'type' => 'composer-plugin',
             'install_path' => __DIR__ . '/../php-http/discovery',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'phpseclib/phpseclib' => array(
+            'pretty_version' => '3.0.52',
+            'version' => '3.0.52.0',
+            'reference' => '2adaefc83df2ec548558307690f376dd7d4f4fce',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpseclib/phpseclib',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
@@ -178,6 +214,12 @@
             'install_path' => __DIR__ . '/../symfony/polyfill-php81',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'videlalvaro/php-amqplib' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => 'v3.7.4',
+            ),
         ),
     ),
 );

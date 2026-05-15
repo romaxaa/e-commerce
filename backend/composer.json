@@ -3,7 +3,8 @@
         "namshi/jose": "^7.2",
         "meilisearch/meilisearch-php": "^1.16",
         "http-interop/http-factory-guzzle": "^1.2",
-        "guzzlehttp/guzzle": "^7.10"
+        "guzzlehttp/guzzle": "^7.10",
+        "php-amqplib/php-amqplib": "^3.7"
     },
     "config": {
         "allow-plugins": {

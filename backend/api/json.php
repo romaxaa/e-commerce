@@ -4,6 +4,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../search/productSearch.php';
 require_once __DIR__ . '/../include/config.php';
+require_once 'RabbitService.php';
 
 session_start();
 
@@ -22,6 +23,8 @@ if (is_null($data))
 }
 
 $action = $data['type'] ?? '';
+
+$rabbit = new RabbitService();
 
 $secretKey = 'q123456789qRomix!';
 
@@ -852,7 +855,7 @@ switch ($action)
 
         $cart = R::dispense('cart');
         $cart->user_id = $_SESSION['logged_user']->id;
-        $cart->product_id = htmlspecialchars($data['id'], ENT_QUOTES);
+        $cart->product_id = htmlspecialchars((int)$data['id']);
         $cart->count = $count;
         $id = R::store($cart);
 
@@ -886,30 +889,27 @@ switch ($action)
     break 1;
 
     case 'checkout':
-        if(!isset($data['totalItems']))
+        $orderdata = ['data' => $data, 'user_id' => $_SESSION['logged_user']->id];
+        $rabbit->publish('order.created', $orderdata);
+
+        echo json_encode(['result' => 'good']);
+
+        /*if(empty($data['adress_id']))
         {
-            echo json_encode(['result' => 'empty_items', 'message' => 'You need pick more products']);
+            echo json_encode(['result' => 'empty_adress']);
             return;
         }
 
-        if(!isset($data['totalSum']))
-        {
-            $data['totalSum'] = $totalSumFrontend;
-            $totalSumFrontend = 0;
-        }
-        else
-        {
-            $data['totalSum'] = $totalSumFrontend;
-        }
-
-        $checkCart = R::getAll('SELECT c.user_id, c.product_id, c.count, p.price FROM cart c INNER JOIN products p ON c.product_id = p.id WHERE c.user_id = ?', [$_SESSION['logged_user']->id]);
+        $checkCart = R::getAll('SELECT c.user_id, c.product_id, c.count as product_count, p.price FROM cart c INNER JOIN products p ON c.product_id = p.id WHERE c.user_id = ?', [$_SESSION['logged_user']->id]);
 
         if(!empty($checkCart))
         {
+            $count = 0;
             $totalSum = 0;
             foreach($checkCart as $item)
             {
-                $totalSum += $item['price'] * $data['totalItems'];
+                $count += $item['product_count'];
+                $totalSum += $item['price'] * $count;
             }
         }
         else
@@ -918,24 +918,41 @@ switch ($action)
             return;
         }
 
-        if(isset($totalSum) && isset($totalSumFrontend))
+        if(isset($checkCart))
         {
-            if($totalSum == $totalSumFrontend)
-            {
-                $userAdress = R::getrow();
+            $order = R::dispense('orders');
+            $order->user_id = htmlspecialchars((int)$_SESSION['logged_user']->id);
+            $order->payment_type = htmlspecialchars($data['payment'], ENT_QUOTES);
 
-                $order = R::dispense('orders');
-                $order->user_id = htmlspecialchars((int)$_SESSION['logged_user']->id);
-                $order->total_price = htmlspecialchars((int)$totalSum);
-                $order->status = 'paid';
-                $order->adress_id = 'asdad';
-            }
-            else
+            $order->total_price = htmlspecialchars((int)$totalSum);
+            $order->status = 'paid';
+            $order->delivery_type = htmlspecialchars($data['delivery'], ENT_QUOTES);
+            $order->adress_id = htmlspecialchars($data['adress_id'], ENT_QUOTES);
+            $order->created_at = date("Y-m-d H:i:s");
+            $id = R::store($order);
+
+            if(!empty($id))
             {
-                echo json_encode(['result' => 'no_match', 'totalSum' => $totalSum]);
-                return;
+                $orderitem = R::dispense('orderitem');
+                $orderitem->order_id = htmlspecialchars((int)$id);
+                foreach($checkCart as $row)
+                {
+                    $orderitem->product_id = $row['product_id'];
+                }
+                $orderitem->quantity = $count;
+                $orderitem->price = $totalSum;
+                $orderitem->config = null;
+                $id_items = R::store($orderitem);
+
+                if(!empty($id_items))
+                {
+                    R::exec('DELETE FROM `cart` WHERE `user_id` = ?', [$_SESSION['logged_user']->id]);
+                    echo json_encode(['result' => 'good']);
+                    return;
+                }
+
             }
-        }
+        }*/
     break 1;
 
     case 'remove-cart-product':
@@ -1036,6 +1053,16 @@ switch ($action)
             echo json_encode(['result' => 'good', 'data' => $products]);
             return;
         }
+    break 1;
+
+    case 'fetch-cities':
+        if(empty($_SESSION['logged_user']))
+        {
+            echo json_encode(['result' => 'auth']);
+            return;
+        }
+        //SELECT gc.name as city_name, gr.name as region_name FROM user_adresses ua INNER JOIN geo_city gc ON ua.city = gc.id INNER JOIN geo_regions gr ON ua.region = gr.id WHERE ua.user_id = 1;
+        $adresses = R::getAll('SELECT ua.*,  user_adresses ua INNER JOIN ');
     break 1;
 
     case 'save-address':
