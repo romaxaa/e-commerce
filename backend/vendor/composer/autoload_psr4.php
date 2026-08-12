@@ -12,6 +12,8 @@ return array(
     'Psr\\Http\\Client\\' => array($vendorDir . '/psr/http-client/src'),
     'PhpAmqpLib\\' => array($vendorDir . '/php-amqplib/php-amqplib/PhpAmqpLib'),
     'ParagonIE\\ConstantTime\\' => array($vendorDir . '/paragonie/constant_time_encoding/src'),
+    'PHPMailer\\PHPMailer\\' => array($vendorDir . '/phpmailer/phpmailer/src'),
+    'OAndreyev\\WKHTMLToPDF\\' => array($vendorDir . '/oleg-andreyev/wkhtmltopdf-osx'),
     'Namshi\\JOSE\\' => array($vendorDir . '/namshi/jose/src/Namshi/JOSE'),
     'Meilisearch\\' => array($vendorDir . '/meilisearch/meilisearch-php/src'),
     'MeiliSearch\\' => array($vendorDir . '/meilisearch/meilisearch-php/src'),

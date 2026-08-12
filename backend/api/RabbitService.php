@@ -31,6 +31,7 @@ class RabbitService
         $this->channel->queue_bind('worker_db', $this->exchange, 'order.created');
         $this->channel->queue_bind('worker_pdf', $this->exchange, 'order.created');
         $this->channel->queue_bind('worker_email', $this->exchange, 'order.created');
+        //нужно здесь убрать обменики worker_pdf и worker_email
     }
 
     // Метод для публикации любого события

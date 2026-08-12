@@ -18,6 +18,8 @@ import privacy from '../components/static/privacy.vue';
 import terms from '../components/static/terms.vue';
 import manageUsers from '../components/admin/manage-users.vue';
 import checkout from '../components/checkout.vue';
+import OrderStatus from '../components/OrderStatus.vue';
+import test from '../components/test.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = createRouter({
@@ -135,6 +137,18 @@ const router = createRouter({
       name: 'checkout',
       component: checkout,
       meta: {guestOnly: false}
+    },
+    {
+      path: '/order-status',
+      name: 'orderstatus',
+      component: OrderStatus,
+      //props
+    },
+    {
+      path: '/test',
+      name: 'test',
+      component: test,
+      meta: {guestOnly: false}
     }
   ]
 });
@@ -152,12 +166,14 @@ router.beforeEach(async (to, from, next) => {
   const isAuthenticated = !!authStore.user;
 
   // 2. Если страница ТОЛЬКО для авторизованных, а юзер — аноним
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  if (to.meta.requiresAuth && !isAuthenticated) 
+  {
     return next('/login');
   }
 
   // 3. Если страница ТОЛЬКО для гостей (логин/рега), а юзер УЖЕ вошел
-  if (to.meta.guestOnly && isAuthenticated) {
+  if (to.meta.guestOnly && isAuthenticated) 
+  {
     return next('/profile'); // Отфутболиваем его в профиль
   }
 

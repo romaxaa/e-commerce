@@ -8,33 +8,35 @@
         <!-- Левая колонка - форма -->
         <div class="checkout-form">
           <!-- Контактные данные -->
-          <div class="form-section glass-panel">
-            <div class="section-header">
-              <h2>Контактные данные</h2>
+        <div v-if="authStore.user == null">
+            <div class="form-section glass-panel">
+                <div class="section-header">
+                <h2>Контактные данные</h2>
+                </div>
+                
+                <div class="form-row">
+                <div class="form-group">
+                    <label>Имя <span class="required">*</span></label>
+                    <input type="text" v-model="orderData.name" placeholder="Иван" class="glass-input">
+                </div>
+                <div class="form-group">
+                    <label>Фамилия <span class="required">*</span></label>
+                    <input type="text" v-model="orderData.lastname" placeholder="Иванов" class="glass-input">
+                </div>
+                </div>
+                
+                <div class="form-row">
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" v-model="orderData.email" placeholder="ivan@example.com" class="glass-input">
+                </div>
+                <div class="form-group">
+                    <label>Телефон <span class="required">*</span></label>
+                    <input type="tel" v-model="orderData.phone" placeholder="+7 (999) 123-45-67" class="glass-input">
+                </div>
+                </div>
             </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label>Имя <span class="required">*</span></label>
-                <input type="text" v-model="orderData.name" placeholder="Иван" class="glass-input">
-              </div>
-              <div class="form-group">
-                <label>Фамилия <span class="required">*</span></label>
-                <input type="text" v-model="orderData.lastname" placeholder="Иванов" class="glass-input">
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label>Email <span class="required">*</span></label>
-                <input type="email" v-model="orderData.email" placeholder="ivan@example.com" class="glass-input">
-              </div>
-              <div class="form-group">
-                <label>Телефон <span class="required">*</span></label>
-                <input type="tel" v-model="orderData.phone" placeholder="+7 (999) 123-45-67" class="glass-input">
-              </div>
-            </div>
-          </div>
+        </div>
 
           <!-- Способ доставки -->
           <div class="form-section glass-panel">
@@ -184,10 +186,6 @@
             <h3>Самовывоз</h3>
             <p>г. Москва, ул. Тверская, 15</p>
             <p>Ежедневно: 10:00 - 22:00</p>
-            <div class="form-group">
-              <label>Комментарий к заказу</label>
-              <textarea v-model="orderData.comment" placeholder="Пожелания..." rows="2" class="glass-input"></textarea>
-            </div>
           </div>
 
           <!-- Способ оплаты -->
@@ -249,12 +247,12 @@
 
             <div class="cart-items">
               <div v-for="item in cartItems" :key="item.id" class="cart-item">
-                <img :src="item.image" class="item-img">
+                <img :src="item.img" class="item-img">
                 <div class="item-info">
-                  <div class="item-name">{{ item.name }}</div>
-                  <div class="item-quantity">x{{ item.quantity }}</div>
+                  <div class="item-name">{{ item.product_name }}</div>
+                  <div class="item-quantity">x{{ item.count }}</div>
                 </div>
-                <div class="item-price">{{ formatPrice(item.price * item.quantity) }} ₽</div>
+                <div class="item-price">{{ formatPrice(item.product_price * item.count) }} ₽</div>
               </div>
             </div>
 
@@ -305,22 +303,9 @@ const alerts = useAlertStore();
 
 const router = useRouter()
 
-// Авторизация
-const isAuthenticated = ref(true)
-
-// Данные заказа
-const orderData = ref({
-  name: '',
-  lastname: '',
-  email: '',
-  phone: '',
-  delivery: 'courier',
-  payment: 'card',
-  comment: ''
-})
-
 // Адреса
 const savedAddresses = ref([])
+const cartItems = ref([])
 const selectedAddressId = ref(null)
 const selectedAddress = ref(null)
 const showAddressSelector = ref(false)
@@ -341,30 +326,33 @@ const discount = ref(0)
 const loading = ref(false)
 
 // Корзина
-const cartItems = ref([
+const fetchCart = async () => {
+  const result = await authStore.fetchCart();
+
+  if(result.success)
   {
-    id: 1,
-    name: 'iPhone 15 Pro',
-    price: 89990,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=80&h=80&fit=crop'
-  },
-  {
-    id: 4,
-    name: 'Sony WH-1000XM5',
-    price: 24990,
-    quantity: 2,
-    image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=80&h=80&fit=crop'
+    cartItems.value = result.products;
   }
-])
+  
+  if(result.empty)
+  {
+    alerts.show('у вас пустая корзина!', 'warning');
+  }
+
+  if(!result.success)
+  {
+    console.log(result.error);
+  }
+
+};
 
 // Вычисления
 const totalItems = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + item.quantity, 0)
+  return cartItems.value.reduce((sum, item) => sum + item.count, 0)
 })
 
 const subtotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  return cartItems.value.reduce((sum, item) => sum + (item.product_price * item.count), 0)
 })
 
 const deliveryCost = computed(() => {
@@ -386,15 +374,8 @@ const formatPrice = (price) => {
 }
 
 const loadUserData = async () => {
-  if (isAuthenticated.value) 
+  if (authStore.user != null) 
   {
-    orderData.value.name = authStore.user?.name
-    orderData.value.lastname = authStore.user?.surname
-    orderData.value.email = authStore.user?.email
-    orderData.value.phone = authStore.user?.phone
-    
-    //const result = await authStore.f
-
     savedAddresses.value = [
       {
         id: 1,
@@ -482,27 +463,54 @@ const applyPromo = () => {
   }
 }
 
+const orderData = ref({
+    name: '',
+    lastname: '',
+    email: '',
+    phone: '',
+    delivery: 'courier',
+    payment: '',
+    adress_id: 1
+})
+
 const submitOrder = async () => {
-  if (!orderData.value.name || !orderData.value.phone || !orderData.value.email) {
-    alert('Заполните контактные данные')
-    return
-  }
-  
-  if (orderData.value.delivery !== 'pickup' && !selectedAddressId.value && !addressForm.value.city) {
-    alert('Укажите адрес доставки')
-    return
-  }
-  
-  loading.value = true
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  alert('Заказ успешно оформлен!')
-  localStorage.removeItem('cart')
-  router.push('/')
-  loading.value = false
+
+    if(authStore.user == null)
+    {
+        if (!orderData.value.name || !orderData.value.phone || !orderData.value.email) 
+        {
+            alerts.show('Заполните контактные данные', 'error');
+            return
+        }
+    }
+    
+    if (orderData.value.delivery !== 'pickup' && !selectedAddressId.value && !addressForm.value.city) 
+    {
+        alerts.show('Укажите адрес доставки', 'error');
+        return
+    }
+
+    if (!orderData.value.payment) 
+    {
+        alerts.show('Укажите способ оплаты', 'error');
+        return
+    }
+    
+    loading.value = true
+
+    const result = await authStore.Checkout(orderData.value.delivery, orderData.value.payment, orderData.value.adress_id);
+
+    if(result.success)
+    {
+        alerts.show('Заказ успешно оформлен!', 'success');
+        loading.value = false
+    }
+    
 }
 
 onMounted(() => {
   loadUserData()
+  fetchCart()
 })
 </script>
 

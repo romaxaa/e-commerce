@@ -84,7 +84,7 @@
               <span>{{ quantity }}</span>
               <button @click="incrementQuantity" :disabled="quantity >= product.stock">+</button>
             </div>
-            <button class="add-to-cart-btn" @click="addToCart">
+            <button class="add-to-cart-btn" @click="addToCart(product)">
               🛒 Добавить в корзину
             </button>
             <button class="favorite-btn" @click="toggleFavorite" :class="{ active: isFavorite }">
@@ -476,10 +476,18 @@ const decrementQuantity = () => {
 }
 
 // Добавление в корзину
-const addToCart = () => {
-  console.log('Добавлено в корзину:', { ...product.value, quantity: quantity.value })
-  alert('Товар добавлен в корзину!')
-}
+const addToCart = async (product) => {
+  const result = await authStore.addToCart(product.id);
+
+  if(result.success)
+  {
+    alerts.show('Товар добавлен в корзину!', 'success');
+  }
+  else
+  {
+    alerts.show('Произошла ошибка!', 'error');
+  }
+};
 
 // Избранное
 const toggleFavorite = () => {

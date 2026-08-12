@@ -201,15 +201,6 @@ const fetchCart = async () => {
 
 };
 
-/*const checkout = async () => {
-  const result = await authStore.Checkout(total, totalItems);
-
-  if(result.success)
-  {
-    alerts.show('Заказ успешно оформлен!', 'success');
-  }
-}*/
-
 // Рекомендуемые товары (моковые данные)
 const recommendedProducts = ref([
   {

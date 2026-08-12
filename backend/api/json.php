@@ -12,6 +12,10 @@ use Namshi\JOSE\SimpleJWS;
 use Meilisearch\Client;
 use App\Search\productsearch;
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
 $client = new Client('http://meilisearch:7700', 'asdasd123');
 
 
@@ -889,8 +893,8 @@ switch ($action)
     break 1;
 
     case 'checkout':
-        $orderdata = ['data' => $data, 'user_id' => $_SESSION['logged_user']->id];
-        $rabbit->publish('order.created', $orderdata);
+        $data['user_id'] = $_SESSION['logged_user']->id;
+        $rabbit->publish('order.created', $data);
 
         echo json_encode(['result' => 'good']);
 
@@ -1260,6 +1264,333 @@ switch ($action)
             return;
         }
 
+    break 1;
+
+    case 'create-pdf':
+        $mail = new PHPMailer(true);
+        $html = '<!DOCTYPE html>
+            <html lang="ru">
+            <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>GlassShop — Подтверждение заказа</title>
+            <style>
+                /* Базовые стили для email-клиентов */
+                * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                }
+                body {
+                background-color: #e9eef3;
+                line-height: 1.5;
+                padding: 20px;
+                }
+                .email-wrapper {
+                max-width: 600px;
+                margin: 0 auto;
+                background: #ffffff;
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+                }
+                .email-header {
+                background: #0a0a0f;
+                padding: 24px 30px;
+                text-align: center;
+                border-bottom: 3px solid #c084fc;
+                }
+                .email-header h1 {
+                color: #ffffff;
+                font-size: 26px;
+                font-weight: 700;
+                letter-spacing: -0.3px;
+                margin: 0 0 6px;
+                }
+                .email-header p {
+                color: #a1a1aa;
+                font-size: 14px;
+                margin: 0;
+                }
+                .email-body {
+                padding: 32px 30px;
+                }
+                .greeting {
+                font-size: 18px;
+                font-weight: 600;
+                color: #18181b;
+                margin-bottom: 8px;
+                }
+                .order-id {
+                background: #f4f4f6;
+                display: inline-block;
+                padding: 6px 14px;
+                border-radius: 40px;
+                font-size: 13px;
+                font-weight: 500;
+                color: #27272a;
+                margin: 16px 0 12px;
+                }
+                .order-status {
+                background: #e6f7ec;
+                color: #1e7b3c;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 6px 12px;
+                border-radius: 40px;
+                display: inline-block;
+                margin-left: 10px;
+                }
+                .info-grid {
+                background: #f8fafc;
+                border-radius: 16px;
+                padding: 18px 20px;
+                margin: 24px 0;
+                border: 1px solid #e2e8f0;
+                }
+                .info-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 12px;
+                font-size: 14px;
+                }
+                .info-row:last-child {
+                margin-bottom: 0;
+                }
+                .info-label {
+                color: #4b5563;
+                font-weight: 500;
+                }
+                .info-value {
+                color: #1f2937;
+                font-weight: 500;
+                }
+                table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 24px 0 20px;
+                }
+                th {
+                text-align: left;
+                padding: 12px 6px 8px 0;
+                font-size: 13px;
+                color: #6c757d;
+                border-bottom: 1px solid #e9ecef;
+                font-weight: 600;
+                }
+                td {
+                padding: 12px 6px 12px 0;
+                border-bottom: 1px solid #f0f2f5;
+                font-size: 14px;
+                color: #212529;
+                }
+                .total-line {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                font-size: 15px;
+                border-top: 1px solid #e2e8f0;
+                margin-top: 12px;
+                }
+                .grand-total {
+                font-size: 20px;
+                font-weight: 800;
+                color: #0a0a0f;
+                border-top: 2px solid #cbd5e1;
+                padding-top: 16px;
+                margin-top: 8px;
+                }
+                .warranty-block {
+                background: #fefce8;
+                border-left: 4px solid #eab308;
+                padding: 16px 20px;
+                border-radius: 14px;
+                margin: 28px 0 24px;
+                }
+                .warranty-block p {
+                margin: 5px 0;
+                font-size: 13px;
+                color: #854d0e;
+                }
+                .button {
+                display: inline-block;
+                background-color: #0a0a0f;
+                color: #ffffff;
+                text-decoration: none;
+                padding: 12px 28px;
+                border-radius: 40px;
+                font-weight: 600;
+                font-size: 15px;
+                margin: 10px 0 8px;
+                }
+                .footer {
+                background-color: #f9fafb;
+                padding: 24px 30px;
+                text-align: center;
+                border-top: 1px solid #eef2f6;
+                font-size: 12px;
+                color: #6c757d;
+                }
+                .footer a {
+                color: #3b82f6;
+                text-decoration: none;
+                }
+                @media (max-width: 500px) {
+                .email-body {
+                    padding: 24px 20px;
+                }
+                .info-row {
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                td, th {
+                    font-size: 12px;
+                }
+                }
+            </style>
+            </head>
+            <body>
+            <div class="email-wrapper">
+                <!-- Шапка письма -->
+                <div class="email-header">
+                <h1>GlassShop</h1>
+                <p>Премиальная электроника</p>
+                </div>
+
+                <!-- Основной контент -->
+                <div class="email-body">
+                <div class="greeting">Здравствуйте, Алексей!</div>
+                <p style="margin: 8px 0 0px; color: #3b3b45;">Спасибо за покупку! Ваш заказ успешно оплачен и поступил в обработку.</p>
+                
+                <div>
+                    <span class="order-id">Заказ № GL-2405-892</span>
+                    <span class="order-status">✅ ОПЛАЧЕН</span>
+                </div>
+
+                <!-- Детали -->
+                <div class="info-grid">
+                    <div class="info-row">
+                    <span class="info-label">Дата заказа:</span>
+                    <span class="info-value">14 мая 2025, 14:32 МСК</span>
+                    </div>
+                    <div class="info-row">
+                    <span class="info-label">Способ оплаты:</span>
+                    <span class="info-value">Банковская карта (Visa) •• 4678</span>
+                    </div>
+                    <div class="info-row">
+                    <span class="info-label">Доставка:</span>
+                    <span class="info-value">Курьерская, Бесплатно</span>
+                    </div>
+                    <div class="info-row">
+                    <span class="info-label">Адрес получения:</span>
+                    <span class="info-value">г. Москва, ул. Тверская, д. 15, кв. 45</span>
+                    </div>
+                </div>
+
+                <!-- Список товаров -->
+                <h3 style="font-size: 18px; margin-bottom: 8px;">🛍️ Состав заказа</h3>
+                <table>
+                    <thead>
+                    <tr><th>Товар</th><th>Кол-во</th><th>Цена</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr><td>iPhone 15 Pro 256GB (Титан)</td><td>1 шт</td><td>89 990 ₽</td></tr>
+                    <tr><td>Sony WH-1000XM5 (черный)</td><td>1 шт</td><td>24 990 ₽</td></tr>
+                    <tr><td>Apple Watch Series 9 (45mm)</td><td>2 шт</td><td>71 980 ₽</td></tr>
+                    </tbody>
+                </table>
+                
+                <!-- Итоговая сумма -->
+                <div class="total-line">
+                    <span>Стоимость товаров:</span>
+                    <span>186 960 ₽</span>
+                </div>
+                <div class="total-line">
+                    <span>Скидка (WELCOME10):</span>
+                    <span>- 18 696 ₽</span>
+                </div>
+                <div class="total-line">
+                    <span>Доставка:</span>
+                    <span>0 ₽</span>
+                </div>
+                <div class="grand-total">
+                    Итого к оплате: 168 264 ₽
+                </div>
+
+                <!-- Блок гарантии -->
+                <div class="warranty-block">
+                    <p>🛡️ <strong>Гарантия 12 месяцев</strong> — официальная гарантия на всю технику.</p>
+                    <p>🔄 Если товар не подошел — вы можете вернуть его в течение 14 дней.</p>
+                    <p>🔧 Сервисная поддержка доступна по телефону 8 (800) 555-35-35.</p>
+                </div>
+
+                <!-- Кнопка отслеживания -->
+                <div style="text-align: center;">
+                    <a href="#" class="button">📦 Отследить заказ</a>
+                    <p style="font-size: 12px; color: #7f8c8d; margin-top: 12px;">Статус заказа также доступен в личном кабинете.</p>
+                </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                <p>© 2025 GlassShop — Техника, которой доверяют.<br>
+                <a href="#">Политика конфиденциальности</a> | <a href="#">Помощь</a></p>
+                <p style="margin-top: 12px;">Это письмо было отправлено автоматически, пожалуйста, не отвечайте на него.<br>
+                Если у вас есть вопросы, свяжитесь с поддержкой: support@glassshop.ru</p>
+                </div>
+            </div>
+            </body>
+            </html>
+        ';
+
+        try 
+        {
+            $mail->isSMTP();
+
+            $mail->Host = 'mailpit';
+            $mail->Port = 1025;
+
+            $mail->SMTPAuth = false;
+
+            $mail->CharSet = 'UTF-8';
+
+            $mail->setFrom('shop@test.local', 'GlassShop');
+
+            $mail->addAddress('client@test.local');
+
+            $mail->isHTML(true);
+
+            $mail->Subject = 'Детали заказа №123123';
+
+            $mail->Body = $html;
+
+            $mail->send();
+
+            echo json_encode(['result' => 'good']);
+            return;
+
+        } catch (Exception $e) 
+        {
+            echo "Ошибка: {$mail->ErrorInfo}";
+        }
+        /*$options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        
+        $pdf = $dompdf->output();
+
+        if($pdf)
+        {
+            file_put_contents('new-file.pdf', $pdf);
+            
+            echo json_encode(['result' => 'good']);
+            return;
+        }*/
     break 1;
 
     case 'logout':

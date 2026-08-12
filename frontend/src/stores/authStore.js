@@ -454,9 +454,9 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async Checkout(totalSum, totalItems)
+    async Checkout(delivery, payment, adress_id)
     {
-      const response = await axios.post('/api/json.php', {type: 'checkout', totalSum: totalSum, totalItems: totalItems});
+      const response = await axios.post('/api/json.php', {type: 'checkout', delivery: delivery, payment: payment, adress_id: adress_id });
 
       if(response.data.result == "good")
       {
@@ -565,6 +565,24 @@ export const useAuthStore = defineStore('auth', {
        finally 
       {
         this.loading = false;
+      }
+    },
+
+    async fetchAdresses()
+    {
+      const response = await axios.post('/api/json.php', {
+        type: 'fetch-cities'
+      });
+
+      if(response.data.result === 'good')
+      {
+        console.log('good!');
+        return { success: true, cities: response.cities };
+      }
+      else 
+      {
+        this.error = response.data.message;
+        return { success: false, error: this.error };
       }
     },
 
@@ -696,6 +714,21 @@ export const useAuthStore = defineStore('auth', {
         return { success: false, error: errorMessage };
       }
       
+    },
+
+    async createPdf()
+    {
+      const response = await axios.post('api/json.php', {type: 'create-pdf'});
+
+      if(response.data.result == 'good')
+      {
+        return {success: true};
+      }
+      else 
+      {
+        this.error = response.data.message;
+        return { success: false, error: this.error };
+      }
     },
 
     async logout() 

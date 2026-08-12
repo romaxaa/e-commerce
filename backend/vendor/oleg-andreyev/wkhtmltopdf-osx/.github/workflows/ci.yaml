@@ -1,0 +1,57 @@
+on:
+  push: ~
+  pull_request: ~
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  tests:
+    name: "unit-testing"
+    continue-on-error: true
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ 'macos-latest' ]
+        php: [ '7.4' ]
+        tag: [ '0.12.1', '0.12.2', '0.12.2.1', '0.12.3', '0.12.4', '0.12.5' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ matrix.tag }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: zip, :xdebug
+          tools: composer
+
+      - name: Determine composer cache directory
+        id: composer-cache
+        run: echo "::set-output name=directory::$(composer config cache-dir)"
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.directory }}
+          key: ${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ matrix.php }}-composer-
+
+      - name: Install dependencies
+        run: |
+          composer update --no-interaction --prefer-dist
+
+      - name: Run tests
+        run: |
+          mkdir -p artifacts
+          php ./.github/scripts/generate_pdf.php > ./artifacts/wkhtmltopdf-${{ matrix.tag }}.pdf
+
+      - name: Archive logs artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          path: |
+            artifacts

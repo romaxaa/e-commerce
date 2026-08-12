@@ -5,6 +5,7 @@ require_once __DIR__ . '/../include/rb.php';
 
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
@@ -17,8 +18,11 @@ echo " [*] Worker DB is start.\n";
 $connection = new AMQPStreamConnection('rabbitmq', 5672, 'user', 'root');
 $channel = $connection->channel();
 
+// 2. Объявляем СВОЮ СОБСТВЕННУЮ очередь для добавления данных в бд
+$channel->queue_declare('worker_db', false, true, false, false, false, new AMQPTable(['x-queue-type' => 'quorum']));
+
 // 3. Создаем колбэк (инструкцию), которая выполнится при получении сообщения
-$callback = function (AMQPMessage $msg) 
+$callback = function (AMQPMessage $msg) use ($channel)
 {
     echo " [x] Получены данные для БД...\n";
     
@@ -29,6 +33,13 @@ $callback = function (AMQPMessage $msg)
     {
         echo " [!] Ошибка: Неверный формат JSON\n";
         // Важно: даже если данные плохие, говорим Кролику, что обработали, чтобы удалить их из очереди
+        $msg->ack(); 
+        return;
+    }
+
+    if(!$data['user_id'])
+    {
+        echo " [!] Ошибка: Нет id юзера\n";
         $msg->ack(); 
         return;
     }
@@ -50,7 +61,8 @@ $callback = function (AMQPMessage $msg)
             foreach($checkCart as $item)
             {
                 $count += $item['product_count'];
-                $totalSum += $item['price'] * $count;
+                $totalSum += $item['price'] * $item['product_count'];
+                //$totalSum += $item['price'] * $count;
             }
         }
         else
@@ -64,8 +76,8 @@ $callback = function (AMQPMessage $msg)
             $order = R::dispense('orders');
             $order->user_id = htmlspecialchars((int)$data['user_id']);
             $order->payment_type = htmlspecialchars($data['payment'], ENT_QUOTES);
-
             $order->total_price = htmlspecialchars((int)$totalSum);
+            $order->total_quantity = htmlspecialchars((int)$count);
             $order->status = 'paid';
             $order->delivery_type = htmlspecialchars($data['delivery'], ENT_QUOTES);
             $order->adress_id = htmlspecialchars($data['adress_id'], ENT_QUOTES);
@@ -74,22 +86,32 @@ $callback = function (AMQPMessage $msg)
 
             if(!empty($id))
             {
-                $orderitem = R::dispense('orderitem');
-                $orderitem->order_id = htmlspecialchars((int)$id);
                 foreach($checkCart as $row)
                 {
+                    $orderitem = R::dispense('orderitem');
+                    $orderitem->order_id = htmlspecialchars((int)$id);
                     $orderitem->product_id = $row['product_id'];
+                    $orderitem->quantity = $row['count'];
+                    $orderitem->price = $row['price'];
+                    $orderitem->config = null;
+                    $id_items = R::store($orderitem);
                 }
-                $orderitem->quantity = $count;
-                $orderitem->price = $totalSum;
-                $orderitem->config = null;
-                $id_items = R::store($orderitem);
 
                 if(!empty($id_items))
                 {
                     R::exec('DELETE FROM `cart` WHERE `user_id` = ?', [$data['user_id']]);
-                    echo json_encode(['result' => 'good']);
-                    return;
+
+                    $orderdata = [
+                        'order_id'   => $id,               // Важно! Передаем созданный ID заказа
+                        'user_id'    => $data['user_id']
+                    ];
+
+                    $nextMsg = new AMQPMessage(json_encode($orderdata), ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]);
+                    
+                    // Публикуем в тот же exchange, но с НОВЫМ ключом маршрутизации 'order.confirmed'
+                    $channel->basic_publish($nextMsg, 'shop.events', 'order.confirmed');
+                    
+                    echo " [->] Эстафета 'order.confirmed' передана дальше для чеков и гарантий!\n";
 
                     $msg->ack();
                 }
@@ -98,9 +120,6 @@ $callback = function (AMQPMessage $msg)
         }
         
         echo " [v] Заказ успешно сохранен в БД!\n";
-        
-        // Подтверждаем RabbitMQ, что всё прошло успешно. Теперь Кролик удалит сообщение.
-        //$msg->ack();
         
     } 
     catch (Exception $e) 

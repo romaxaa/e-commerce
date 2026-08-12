@@ -129,12 +129,7 @@
 
           <!-- Сетка товаров -->
           <div v-if="displayedProducts" class="products-grid" :class="{ 'list-view': viewMode === 'list' }">
-            <div 
-              v-for="product in displayedProducts" 
-              :key="product.id" 
-              class="product-card glass-panel"
-              @click="goToProduct(product.url)"
-            >
+            <div v-for="product in displayedProducts" :key="product.id" class="product-card glass-panel"@click="goToProduct(product.url)">
               <div class="product-image">
                 <img :src="product.img" :alt="product.name">
                 <div class="product-badges">
@@ -160,7 +155,7 @@
                 </div>
                 
                 <div class="product-actions">
-                  <button class="cart-btn" @click.stop="addToCart(product.id)">
+                  <button class="cart-btn" @click.stop="addToCart(product)">
                     🛒 В корзину
                   </button>
                   <button class="quick-view-btn" @click.stop="" @click="goToProduct(product.url)">
@@ -225,8 +220,10 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import { useAlertStore } from '../stores/alertStore';
 
 const authStore = useAuthStore();
+const alerts = useAlertStore(); 
 const route = useRoute()
 const router = useRouter()
 
@@ -392,10 +389,18 @@ const toggleFavorite = (id) => {
   if (product) product.isFavorite = !product.isFavorite
 }
 
-const addToCart = (product) => {
-  console.log('Добавлено в корзину:', product)
-  alert(`${product.name} добавлен в корзину!`)
-}
+const addToCart = async (product) => {
+  const result = await authStore.addToCart(product.id);
+
+  if(result.success)
+  {
+    alerts.show('Товар добавлен в корзину!', 'success');
+  }
+  else
+  {
+    alerts.show('Произошла ошибка!', 'error');
+  }
+};
 
 const goToProduct = (url) => {
   router.push(`/product/${url}`)

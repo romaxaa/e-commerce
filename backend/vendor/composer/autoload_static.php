@@ -29,6 +29,11 @@ class ComposerStaticInit86aac6195c6faa77df47ac4568195e4c
             'Psr\\Http\\Client\\' => 16,
             'PhpAmqpLib\\' => 11,
             'ParagonIE\\ConstantTime\\' => 23,
+            'PHPMailer\\PHPMailer\\' => 20,
+        ),
+        'O' =>
+        array (
+            'OAndreyev\\WKHTMLToPDF\\' => 22,
         ),
         'N' =>
         array (
@@ -77,6 +82,14 @@ class ComposerStaticInit86aac6195c6faa77df47ac4568195e4c
         'ParagonIE\\ConstantTime\\' =>
         array (
             0 => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src',
+        ),
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
+        ),
+        'OAndreyev\\WKHTMLToPDF\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/oleg-andreyev/wkhtmltopdf-osx',
         ),
         'Namshi\\JOSE\\' =>
         array (

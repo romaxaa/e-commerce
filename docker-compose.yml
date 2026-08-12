@@ -43,6 +43,20 @@ services:
     networks:
       - app-network
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # AMQP протокол
+      - "15672:15672"  # Web UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: root
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network 
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: ecommerce_phpmyadmin
@@ -74,14 +88,14 @@ services:
       - MEILI_ENV=development # В разработке выключает лишнюю защиту
     networks:
       - app-network
+  
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
 
-  websocket:
-    build: ./docker/php
-    command: php /var/www/websocket/server.php
     ports:
-      - "2346:2346"  # ← ДОБАВИТЬ порт для WebSocket
-    volumes:
-      - ./backend:/var/www
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - app-network
 
@@ -109,3 +123,4 @@ networks:
 
 volumes:
   mysql_data:
+  rabbitmq_data:

@@ -22,4 +22,6 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install zip \
     && rm -rf /var/lib/apt/lists/*
 
+RUN docker-php-ext-install sockets
+
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
